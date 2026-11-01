@@ -1,0 +1,125 @@
+# Privo stop page
+
+`https://privo.fyi/p/stop` is the "Whoa, wait a second!" interstitial. It shows visitors where a link is going and sends them on after 20 seconds, or immediately if they click **Proceed**.
+
+## Using it with Privo short links
+
+Nothing to do. `privo.fyi/{shortcode}` redirects to the stop page automatically:
+
+```
+privo.fyi/abcd12
+  -> privo.fyi/p/stop?url=https%3A%2F%2Fexample.com&viaPrivo=true
+  -> https://example.com
+```
+
+### Link previews and SEO
+
+`privo.fyi/{shortcode}` now serves a small HTML page (HTTP 200) whose `<head>` mirrors the destination, so shared links and search engines see the destination's identity rather than "Privo":
+
+- `<title>` and `description`
+- Open Graph and Twitter card tags (`og:title`, `og:description`, `og:image`, `og:site_name`, `twitter:card`)
+- `canonical` pointing at the destination
+
+People are sent straight on to the stop page. Crawlers and link unfurlers (Bluesky, Slack, Discord, X, iMessage and so on) read the tags instead.
+
+How the data is collected:
+
+- It is fetched once, when the link is created (`POST /api/link`), and stored in the `links` table. The API response includes a `preview` object.
+- Order of preference: Open Graph, then Twitter tags, then plain `<title>` / `<meta name="description">`.
+- If the destination can't be read (timeout after 3.5s, not HTML, blocked), the page falls back to the destination's hostname and never blocks link creation.
+- Links created before this change are filled in automatically the first time someone visits them.
+- For these visits the stop page explains: "You are viewing this page because the link you clicked was shortened using **Privo**."
+
+Preview images are copied, not hotlinked:
+
+- At creation the Worker downloads the destination's `og:image` into R2 and serves it from `https://privo.fyi/i/{shortcode}`. That URL is what goes in `og:image` / `twitter:image`.
+- Limits: 5 MB, 3 second timeout. Only PNG, JPEG, GIF, WebP and AVIF are kept. The type is checked from the file's bytes, not the server's headers. SVG is refused.
+- If the copy fails (too big, blocked, not an image, no R2 binding), the destination's original image URL is used instead, so you still get a preview on sites that allow hotlinking.
+- Images are served with `nosniff` and a locked-down CSP, cached for a day.
+- The image is a snapshot from creation time. There's no automatic refresh and no cleanup when a link is deleted.
+
+## Using it from an external site
+
+Any site can send its visitors through the stop page without creating a Privo short link. Link to `/p/stop` with `viaPrivo=false` and the three required parameters:
+
+| Parameter | Required | Description |
+|---|---|---|
+| `url` | yes | Destination. Must be `http://` or `https://`, URL-encoded. |
+| `viaPrivo` | yes | Set to `false` for direct use. |
+| `sourceSiteName` | yes | Name of your site, shown to the visitor ("Coffee & Code is sending you to…"). |
+| `sourceSiteUrl` | yes | Your site's URL. Must be `http://` or `https://`. Its host is shown as "Sent from …". |
+
+Example:
+
+```
+https://privo.fyi/p/stop?url=https%3A%2F%2Fexample.com&viaPrivo=false&sourceSiteName=Coffee%20%26%20Code&sourceSiteUrl=https%3A%2F%2Fcoffeencode.cc
+```
+
+If `url`, `sourceSiteName` or `sourceSiteUrl` is missing or invalid, the page shows an error naming the problem and does not redirect. If `viaPrivo` is omitted, it is treated as `false`, so the same rules apply.
+
+### HTML
+
+```html
+<a href="https://privo.fyi/p/stop?url=https%3A%2F%2Fexample.com&viaPrivo=false&sourceSiteName=Coffee%20%26%20Code&sourceSiteUrl=https%3A%2F%2Fcoffeencode.cc"
+   rel="noopener">
+  Visit example.com
+</a>
+```
+
+### JavaScript
+
+Build the link with `URLSearchParams` so everything is encoded correctly:
+
+```js
+function privoStopUrl(destination) {
+  const u = new URL("https://privo.fyi/p/stop");
+  u.searchParams.set("url", destination);
+  u.searchParams.set("viaPrivo", "false");
+  u.searchParams.set("sourceSiteName", "Coffee & Code");
+  u.searchParams.set("sourceSiteUrl", "https://coffeencode.cc");
+  return u.toString();
+}
+
+link.href = privoStopUrl("https://example.com/some/page?a=1&b=2");
+```
+
+## Notes
+
+- Always URL-encode `url` and `sourceSiteUrl`. Destinations containing `?`, `&` or `#` will otherwise break.
+- The page is `noindex` and sends no referrer.
+- The stop page doesn't verify where a link came from, so `viaPrivo=true` can be set by anyone. It only changes which parameters are required.
+- Visitors can report a destination from the page via `/p/abuse.html?url=…`.
+
+## Files
+
+| File | Purpose |
+|---|---|
+| `p/stop.html` | The page and its logic |
+| `p/stop.css` | Styles (Privo theme tokens) |
+| `worker.js` | Serves `privo.fyi/{shortcode}` with the destination's SEO tags, scrapes metadata at creation |
+| `add-link-metadata.sql` | D1 migration adding the metadata columns (run before deploying) |
+| `add-image-cache.sql` | D1 migration adding `image_cached` (run before deploying) |
+
+## Deploying
+
+Create the R2 bucket and bind it in `wrangler.toml` as `IMAGES`:
+
+```bash
+npx wrangler r2 bucket create privo-images
+```
+
+```toml
+[[r2_buckets]]
+binding = "IMAGES"
+bucket_name = "privo-images"
+```
+
+Then migrate and deploy (migrations first):
+
+```bash
+npx wrangler d1 execute <DB_NAME> --remote --file=./add-link-metadata.sql
+npx wrangler d1 execute <DB_NAME> --remote --file=./add-image-cache.sql
+npx wrangler deploy
+```
+
+If you already ran `add-link-metadata.sql`, skip it. Without the `IMAGES` binding the Worker still runs and falls back to the destination's original image URLs.

@@ -1,0 +1,347 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="referrer" content="no-referrer">
+  <meta name="theme-color" content="#1c1310">
+  <meta name="color-scheme" content="dark">
+  <title>Whoa, wait a second! · Privo.fyi</title>
+  <link rel="icon" type="image/x-icon" href="media/privo.svg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inria+Serif:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+  <script src="https://kit.fontawesome.com/8f1701cd51.js" crossorigin="anonymous" defer></script>
+  <link href="css/stop.css" rel="stylesheet">
+</head>
+
+<body>
+  <main class="card" id="card" aria-labelledby="title">
+
+    <div class="stop-icon" aria-hidden="true">
+      <i class="fa-solid fa-hand"></i>
+    </div>
+
+    <h1 id="title">Whoa, wait a second!</h1>
+
+    <!-- Filled in by the script below -->
+    <p class="lede" id="lede">Checking this link…</p>
+    <p class="source-note" id="source-note" hidden></p>
+    <div class="error-detail" id="error-detail" hidden></div>
+
+    <p class="countdown" id="countdown" hidden>
+      You’ll be redirected in <strong id="seconds">20</strong> <span id="seconds-label">seconds</span>
+    </p>
+
+    <a class="proceed" id="proceed" href="#" rel="noreferrer noopener" hidden>Proceed</a>
+
+    <p class="disclaimer" id="disclaimer" hidden>
+      Privo can’t determine the authenticity of this site, if you believe this
+      site is malicious please <a id="report-inline" href="abuse.html">report it</a>
+    </p>
+
+    <noscript>
+      <p class="disclaimer">Please enable JavaScript to view this link’s destination.</p>
+    </noscript>
+
+    <div class="spacer"></div>
+
+    <a class="powered" href="/" aria-label="Powered by Privo.fyi">
+      <i class="fa-solid fa-link" aria-hidden="true"></i>
+      <span>Powered by Privo.<em>fyi</em></span>
+    </a>
+
+    <p class="footer-links">
+      <a id="report-footer" href="abuse.html">Report malicious link</a>
+      -
+      <a href="/privacy">Privacy Policy</a>
+    </p>
+
+  </main>
+
+  <script>
+    "use strict";
+
+    (() => {
+      const COUNTDOWN_SECONDS = 20;
+
+      const params = new URLSearchParams(window.location.search);
+
+      const $ = (id) => document.getElementById(id);
+      const card = $("card");
+      const lede = $("lede");
+      const sourceNote = $("source-note");
+      const errorDetail = $("error-detail");
+      const countdown = $("countdown");
+      const secondsEl = $("seconds");
+      const secondsLabel = $("seconds-label");
+      const proceed = $("proceed");
+      const disclaimer = $("disclaimer");
+
+      /*
+       * Only plain http(s) URLs are ever accepted. This blocks
+       * javascript:, data:, file: and friends from reaching the button.
+       */
+      function parseHttpUrl(value) {
+        if (!value) return null;
+
+        try {
+          const parsed = new URL(value);
+
+          if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
+            return null;
+          }
+
+          return parsed;
+        } catch {
+          return null;
+        }
+      }
+
+      /*
+       * Build the "https://example.com" lede with the host emphasised.
+       * Uses DOM nodes only (no innerHTML) so nothing in the query string
+       * can inject markup.
+       */
+      function renderLede(target, sourceName) {
+        lede.textContent = "";
+
+        lede.append(
+          sourceName
+            ? `${sourceName} is sending you to `
+            : "This link is redirecting you to "
+        );
+
+        const strong = document.createElement("strong");
+        strong.textContent = target.origin;
+        lede.append(strong);
+
+        lede.append(", please verify this is the site you intend to visit.");
+      }
+
+      function setReportLinks(target) {
+        const href = "abuse.html?url=" + encodeURIComponent(target);
+        $("report-inline").href = href;
+        $("report-footer").href = href;
+      }
+
+      /*
+       * Ask our own server whether the destination is a known threat.
+       * Fails open: if the check errors or takes longer than 5 seconds, the
+       * page carries on exactly as it did before.
+       */
+      async function checkDestination(href) {
+        const controller = new AbortController();
+        const abortTimer = window.setTimeout(() => controller.abort(), 5000);
+
+        try {
+          const res = await fetch("/api/check?url=" + encodeURIComponent(href), {
+            signal: controller.signal,
+            cache: "no-store",
+            referrerPolicy: "no-referrer"
+          });
+
+          if (!res.ok) return { status: "unchecked", threats: [] };
+
+          const data = await res.json();
+
+          if (data && data.status === "flagged") {
+            return {
+              status: "flagged",
+              threats: Array.isArray(data.threats) ? data.threats : []
+            };
+          }
+
+          return { status: data && data.status === "clean" ? "clean" : "unchecked", threats: [] };
+        } catch {
+          return { status: "unchecked", threats: [] };
+        } finally {
+          window.clearTimeout(abortTimer);
+        }
+      }
+
+      const THREAT_LABELS = {
+        MALWARE: "malware",
+        SOCIAL_ENGINEERING: "phishing or other social engineering",
+        UNWANTED_SOFTWARE: "unwanted software"
+      };
+
+      /*
+       * Flagged destination: no countdown, no Proceed button, no redirect.
+       */
+      function showBlocked(threats) {
+        card.classList.add("is-error");
+        document.title = "Link blocked · Privo.fyi";
+        $("title").textContent = "This link has been blocked";
+
+        const reasons = [...new Set(threats.map((t) => THREAT_LABELS[t] || "a security risk"))];
+        const reasonText = reasons.length ? reasons.join(" and ") : "a security risk";
+
+        lede.textContent = "";
+        lede.append("Google Web Risk has flagged ");
+
+        const hostStrong = document.createElement("strong");
+        hostStrong.textContent = target.host;
+        lede.append(hostStrong, ` for ${reasonText}, so Privo won’t send you there.`);
+
+        sourceNote.hidden = true;
+        countdown.hidden = true;
+        proceed.hidden = true;
+        disclaimer.hidden = true;
+
+        errorDetail.hidden = false;
+        errorDetail.textContent = "";
+
+        const note = document.createElement("p");
+        note.style.margin = "0";
+        note.append("If you think this is a mistake, email ");
+
+        const mail = document.createElement("a");
+        mail.href = "mailto:abuse@privo.fyi";
+        mail.textContent = "abuse@privo.fyi";
+        note.append(mail, ".");
+
+        errorDetail.append(note);
+      }
+
+      function showError(missing) {
+        card.classList.add("is-error");
+        document.title = "Invalid link · Privo.fyi";
+        $("title").textContent = "Hmm, that link isn’t right.";
+
+        lede.textContent =
+          "Privo couldn’t work out where this link is supposed to go, so we haven’t sent you anywhere.";
+
+        errorDetail.hidden = false;
+        errorDetail.textContent = "";
+
+        if (missing.length) {
+          const intro = document.createElement("p");
+          intro.style.margin = "0";
+          intro.textContent = "This link is missing or has an invalid:";
+          errorDetail.append(intro);
+
+          const list = document.createElement("ul");
+
+          for (const name of missing) {
+            const li = document.createElement("li");
+            const code = document.createElement("code");
+            code.textContent = name;
+            li.append(code);
+            list.append(li);
+          }
+
+          errorDetail.append(list);
+        }
+      }
+
+      /*
+       * ------------------------------------------------------------
+       * Parameters
+       *
+       *   url           (always required)  destination, http(s) only
+       *   viaPrivo      "true"  -> link came from privo.fyi/{shortcode}
+       *                 "false" -> direct use by another site
+       *   sourceSiteName  required when viaPrivo is not "true"
+       *   sourceSiteUrl   required when viaPrivo is not "true", http(s)
+       *
+       * viaPrivo missing is treated as "false" so the strict rules apply.
+       * ------------------------------------------------------------
+       */
+      const viaPrivo = params.get("viaPrivo") === "true";
+
+      const target = parseHttpUrl(params.get("url"));
+      const missing = [];
+
+      if (!target) missing.push("url");
+
+      let sourceName = "";
+      let sourceUrl = null;
+
+      if (!viaPrivo) {
+        sourceName = (params.get("sourceSiteName") || "").trim().slice(0, 80);
+        sourceUrl = parseHttpUrl(params.get("sourceSiteUrl"));
+
+        if (!sourceName) missing.push("sourceSiteName");
+        if (!sourceUrl) missing.push("sourceSiteUrl");
+      }
+
+      if (missing.length) {
+        showError(missing);
+        return;
+      }
+
+      /* ---------- Valid: check the destination, then render ---------- */
+
+      lede.textContent = "Checking this link…";
+      setReportLinks(target.href);
+
+      checkDestination(target.href).then((result) => {
+        if (result.status === "flagged") {
+          showBlocked(result.threats);
+          return;
+        }
+
+        showDestination();
+      });
+
+      function showDestination() {
+      renderLede(target, viaPrivo ? "" : sourceName);
+
+      sourceNote.hidden = false;
+
+      if (viaPrivo) {
+        sourceNote.textContent =
+          "You are viewing this page because the link you clicked was shortened using ";
+
+        const privoStrong = document.createElement("strong");
+        privoStrong.textContent = "Privo";
+        sourceNote.append(privoStrong, ".");
+      } else {
+        sourceNote.textContent = "Sent from ";
+
+        const sourceStrong = document.createElement("strong");
+        sourceStrong.textContent = sourceUrl.host;
+        sourceNote.append(sourceStrong);
+      }
+
+      proceed.href = target.href;
+      proceed.textContent = `Proceed to ${target.host}`;
+      proceed.hidden = false;
+
+      disclaimer.hidden = false;
+      countdown.hidden = false;
+
+      setReportLinks(target.href);
+
+      /* ---------- Countdown ---------- */
+
+      let remaining = COUNTDOWN_SECONDS;
+
+      function paint() {
+        secondsEl.textContent = String(remaining);
+        secondsLabel.textContent = remaining === 1 ? "second" : "seconds";
+      }
+
+      paint();
+
+      const timer = window.setInterval(() => {
+        remaining -= 1;
+
+        if (remaining <= 0) {
+          window.clearInterval(timer);
+          window.location.replace(target.href);
+          return;
+        }
+
+        paint();
+      }, 1000);
+
+      /* Stop the auto-redirect if the visitor clicks Proceed themselves. */
+      proceed.addEventListener("click", () => window.clearInterval(timer));
+      }
+    })();
+  </script>
+</body>
+</html>

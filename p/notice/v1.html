@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="referrer" content="no-referrer">
+  <meta name="theme-color" content="#1c1310">
+  <meta name="color-scheme" content="dark">
+
+  <title>Before you continue · Privo.fyi</title>
+
+  <link rel="icon" href="/p/media/privo.svg">
+  <link rel="stylesheet" href="/p/css/stop.css">
+</head>
+
+<body>
+  <main class="card" id="card">
+    <h1 id="title">Before you continue</h1>
+
+    <p class="lede" id="lede">Checking link...</p>
+
+    <p class="source-note" id="source-note" hidden></p>
+
+    <div class="error-detail" id="error-detail" hidden></div>
+
+    <a class="proceed" id="proceed" href="#" hidden>
+      Continue
+    </a>
+
+    <p class="disclaimer" id="disclaimer" hidden>
+      Only continue if you trust this destination.
+      <a id="report-inline" href="abuse.html">Report this link</a>
+    </p>
+
+    <noscript>
+      <p>JavaScript is required to check this link.</p>
+    </noscript>
+
+    <footer>
+      <a class="powered" href="/" aria-label="Privo.fyi home">
+        Privo.<em>fyi</em>
+      </a>
+
+      <p class="footer-links">
+        <a id="report-footer" href="abuse.html">Report a link</a>
+        &middot;
+        <a href="/privacy">Privacy</a>
+      </p>
+    </footer>
+  </main>
+
+  <script>
+    "use strict";
+
+    (() => {
+      const params = new URLSearchParams(location.search);
+      const $ = id => document.getElementById(id);
+
+      const card = $("card");
+      const lede = $("lede");
+      const sourceNote = $("source-note");
+      const errorDetail = $("error-detail");
+      const proceed = $("proceed");
+      const disclaimer = $("disclaimer");
+
+      function parseHttpUrl(value) {
+        if (!value) return null;
+
+        try {
+          const url = new URL(value);
+
+          if (!["http:", "https:"].includes(url.protocol)) {
+            return null;
+          }
+
+          return url;
+        } catch {
+          return null;
+        }
+      }
+
+      function showError(message) {
+        card.classList.add("is-error");
+        document.title = "Invalid link · Privo.fyi";
+        $("title").textContent = "Invalid link";
+        lede.textContent = message;
+        errorDetail.hidden = true;
+      }
+
+      function setReportLinks(url) {
+        const href = "abuse.html?url=" + encodeURIComponent(url);
+
+        $("report-inline").href = href;
+        $("report-footer").href = href;
+      }
+
+      const target = parseHttpUrl(params.get("url"));
+      const viaPrivo = params.get("viaPrivo") === "true";
+
+      if (!target) {
+        showError("This link is missing a valid destination.");
+        return;
+      }
+
+      let sourceName = "";
+      let sourceUrl = null;
+
+      if (!viaPrivo) {
+        sourceName = (
+          params.get("sourceSiteName") || ""
+        ).trim().slice(0, 80);
+
+        sourceUrl = parseHttpUrl(params.get("sourceSiteUrl"));
+
+        if (!sourceName || !sourceUrl) {
+          showError("We couldn't verify where this link came from.");
+          return;
+        }
+      }
+
+      lede.replaceChildren();
+
+      const message = document.createTextNode(
+        viaPrivo
+          ? "You're about to visit "
+          : sourceName + " is sending you to "
+      );
+
+      const destination = document.createElement("strong");
+      destination.textContent = target.host;
+
+      lede.append(message, destination);
+
+      if (viaPrivo) {
+        sourceNote.textContent = "This link was shortened using Privo.";
+      } else {
+        sourceNote.textContent = "Link provided by " + sourceUrl.host + ".";
+      }
+
+      sourceNote.hidden = false;
+
+      proceed.href = target.href;
+      proceed.textContent = "Continue to " + target.host;
+      proceed.hidden = false;
+
+      disclaimer.hidden = false;
+
+      setReportLinks(target.href);
+    })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,400 @@
+<!doctype html>
+
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="description" content="About Privo — a simple link shortener with no tracking, a safety check before every redirect, and link previews that look like the destination.">
+  <meta name="robots" content="index, follow">
+  <meta name="theme-color" content="#1c1310">
+  <meta name="color-scheme" content="dark">
+  <link rel="canonical" href="https://privo.fyi/about.html">
+  <title>About — Privo</title>
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Privo">
+  <meta property="og:title" content="About — Privo">
+  <meta property="og:description" content="A simple link shortener with no tracking, a safety check before every redirect, and previews that look like the destination.">
+  <meta property="og:url" content="https://privo.fyi/about.html">
+  <meta property="og:locale" content="en_US">
+  <link rel="icon" type="image/x-icon" href="https://danielmorrisey.com/media/images/seo/favicons/privo.svg">
+  <meta property="og:image" content="p/image.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inria+Serif:ital,wght@0,400;0,700;1,400&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <script src="https://kit.fontawesome.com/8f1701cd51.js" crossorigin="anonymous" defer></script>
+  <link href="css/style.css" rel="stylesheet">
+  <style>
+    /* About page specific styles */
+    .about-hero {
+      padding: 80px 12px 40px;
+    }
+
+    .about-hero h1 {
+      font-size: clamp(48px, 7vw, 84px);
+      line-height: .92;
+    }
+
+    .about-hero .lede {
+      max-width: 590px;
+      margin: 24px 0 0;
+      color: var(--muted-strong);
+      font: 400 16px/1.6 "Inter", system-ui, sans-serif;
+    }
+
+    .about-body {
+      max-width: 760px;
+      padding: 0 12px 100px;
+    }
+
+    .about-section {
+      margin-bottom: 44px;
+    }
+
+    .about-section h2 {
+      margin: 0 0 14px;
+      color: var(--cream);
+      font-size: 24px;
+      font-weight: 700;
+      letter-spacing: -.02em;
+    }
+
+    .about-section p,
+    .about-section li {
+      color: var(--muted-strong);
+      font: 400 14px/1.7 "Inter", system-ui, sans-serif;
+    }
+
+    .about-section ul,
+    .about-section ol {
+      padding-left: 22px;
+      margin: 12px 0;
+    }
+
+    .about-section li {
+      margin-bottom: 8px;
+    }
+
+    .about-section li::marker {
+      color: var(--peach);
+    }
+
+    .about-section a {
+      color: var(--cream);
+      text-underline-offset: 3px;
+    }
+
+    .about-section strong {
+      color: var(--cream);
+      font-weight: 600;
+    }
+
+    .about-section code {
+      padding: 1px 6px;
+      border-radius: 5px;
+      background: var(--panel);
+      color: var(--cream);
+      font: 400 12.5px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace;
+    }
+
+    /* Principle cards */
+
+    .about-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 14px;
+      margin-top: 18px;
+    }
+
+    .about-card {
+      padding: 18px 18px 6px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius-md);
+      background: var(--panel);
+    }
+
+    .about-card .card-label {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      margin-bottom: 8px;
+      color: var(--peach);
+      font: 600 11px/1 "Inter", system-ui, sans-serif;
+      letter-spacing: .09em;
+      text-transform: uppercase;
+    }
+
+    .about-card .card-label i {
+      font-size: 14px;
+    }
+
+    .about-card p {
+      margin: 0 0 14px;
+    }
+
+    /* Code + table */
+
+    .code-block {
+      margin: 14px 0;
+      padding: 16px 18px;
+      overflow-x: auto;
+      border: 1px solid var(--line);
+      border-radius: var(--radius-md);
+      background: var(--panel);
+      color: var(--cream);
+      font: 400 12.5px/1.7 ui-monospace, SFMono-Regular, Menlo, monospace;
+      white-space: pre;
+    }
+
+    .data-table {
+      width: 100%;
+      margin: 16px 0;
+      border-collapse: collapse;
+      font: 400 13px/1.5 "Inter", system-ui, sans-serif;
+    }
+
+    .data-table th,
+    .data-table td {
+      padding: 10px 12px;
+      text-align: left;
+      vertical-align: top;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .data-table th {
+      color: var(--cream);
+      font-weight: 600;
+      font-size: 11px;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+    }
+
+    .data-table td {
+      color: var(--muted-strong);
+    }
+
+    .data-table td:first-child {
+      color: var(--peach);
+      font-weight: 500;
+      white-space: nowrap;
+    }
+
+    @media (max-width: 760px) {
+      .about-hero {
+        padding: 60px 4px 30px;
+      }
+      .about-body {
+        padding: 0 4px 70px;
+      }
+      .about-grid {
+        grid-template-columns: 1fr;
+      }
+      .data-table {
+        font-size: 12px;
+      }
+      .data-table th,
+      .data-table td {
+        padding: 8px 8px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <a class="skip-link" href="#main-content">
+    Skip to content
+  </a>
+
+  <div class="page">
+
+    <header class="header">
+      <a href="/" class="brand" aria-label="Privo home">
+    privo.<em><i>fyi</i></em>
+      </a>
+      <nav class="nav" aria-label="Primary navigation">
+         <a href="about.html" aria-current="page">About</a>
+        <a href="mailto:abuse@privo.fyi" class="signin">Report a Link</a>
+      </nav>
+    </header>
+
+    <main id="main-content">
+
+      <section class="about-hero" aria-labelledby="about-title">
+        <h1 id="about-title">
+          <span class="first">About</span>
+          <span class="second">Privo</span>
+        </h1>
+        <p class="lede">
+          Privo is a simple link shortener that doesn't track you. No account needed, no click
+          analytics, no ads. Paste a link, get a short one, share it.
+        </p>
+      </section>
+
+      <div class="about-body">
+
+        <section class="about-section" aria-labelledby="a1">
+          <h2 id="a1">How it works</h2>
+          <ol>
+            <li><strong>Paste a link</strong> on the <a href="/">home page</a>, and optionally choose your own shortcode.</li>
+            <li>
+              <strong>We read the page's public details</strong> (its title, description, and
+              preview image) so the short link looks like the page it points to when you share it.
+            </li>
+            <li><strong>Share your short link</strong>, for example <code>privo.fyi/44hf4</code>.</li>
+            <li>
+              <strong>Visitors see a quick safety check</strong> that shows exactly where the link
+              goes, then continue to the destination.
+            </li>
+          </ol>
+        </section>
+
+        <section class="about-section" aria-labelledby="a2">
+          <h2 id="a2">What makes it different</h2>
+
+          <div class="about-grid">
+            <div class="about-card">
+              <div class="card-label">
+                <i class="fa-solid fa-eye-slash" aria-hidden="true"></i>
+                No tracking
+              </div>
+              <p>
+                No click analytics, no fingerprinting, no tracking cookies. A short link is just
+                a redirect.
+              </p>
+            </div>
+            <div class="about-card">
+              <div class="card-label">
+                <i class="fa-solid fa-hand" aria-hidden="true"></i>
+                Safety check
+              </div>
+              <p>
+                Before anyone is redirected, they see the full destination and can proceed or
+                report the link.
+              </p>
+            </div>
+            <div class="about-card">
+              <div class="card-label">
+                <i class="fa-solid fa-image" aria-hidden="true"></i>
+                Real previews
+              </div>
+              <p>
+                Short links carry the destination's title, description, and image, so previews in
+                social and messaging apps look right.
+              </p>
+            </div>
+            <div class="about-card">
+              <div class="card-label">
+                <i class="fa-brands fa-cloudflare" aria-hidden="true"></i>
+                Built on Cloudflare
+              </div>
+              <p>
+                Everything runs on Cloudflare's edge network, which keeps Privo fast and reliable.
+              </p>
+            </div>
+          </div>
+        </section>
+
+        <section class="about-section" aria-labelledby="a3">
+          <h2 id="a3">Use the safety check on your own site</h2>
+          <p>
+            Any website can send its visitors through Privo's safety page without creating a short
+            link. Link to <code>privo.fyi/p/stop</code> with these parameters:
+          </p>
+
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Parameter</th>
+                <th>What it is</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>url</td>
+                <td>The destination. Must start with <code>http://</code> or <code>https://</code>, and be URL-encoded.</td>
+              </tr>
+              <tr>
+                <td>viaPrivo</td>
+                <td>Set to <code>false</code> when linking directly.</td>
+              </tr>
+              <tr>
+                <td>sourceSiteName</td>
+                <td>Your site's name, shown to the visitor.</td>
+              </tr>
+              <tr>
+                <td>sourceSiteUrl</td>
+                <td>Your site's address, also <code>http(s)</code> only.</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <p>For example:</p>
+          <div class="code-block">https://privo.fyi/p/stop
+  ?url=https%3A%2F%2Fexample.com
+  &amp;viaPrivo=false
+  &amp;sourceSiteName=Coffee%20%26%20Code
+  &amp;sourceSiteUrl=https%3A%2F%2Fcoffeencode.cc</div>
+          <p>
+            If any of the required parameters is missing or invalid, the page explains what's
+            wrong and doesn't redirect anyone.
+          </p>
+        </section>
+
+        <section class="about-section" aria-labelledby="a4">
+          <h2 id="a4">Your privacy</h2>
+          <p>
+            We store the link you submit, its destination, and the destination's public preview
+            details. We don't store your IP address, and we don't record who opens a link. Read the
+            full details in our <a href="privacy.html">Privacy Policy</a>.
+          </p>
+        </section>
+
+        <section class="about-section" aria-labelledby="a5">
+          <h2 id="a5">Report a link</h2>
+          <p>
+            If a short link points somewhere harmful, tell us at
+            <a href="mailto:abuse@privo.fyi">abuse@privo.fyi</a>, or use the report link on the
+            safety page. We review every report.
+          </p>
+        </section>
+
+        <section class="about-section" aria-labelledby="a6">
+          <h2 id="a6">Get in touch</h2>
+          <ul>
+            <li>Questions and support: <a href="mailto:support@privo.fyi">support@privo.fyi</a></li>
+            <li>Abuse reports: <a href="mailto:abuse@privo.fyi">abuse@privo.fyi</a></li>
+          </ul>
+        </section>
+
+      </div>
+
+    </main>
+
+    <footer class="footer">
+      <div>
+        <div class="footer-brand">
+          privo.<em>fyi</em>
+        </div>
+        <p class="footer-copy">
+        <i class="fa-regular fa-copyright"></i> <span id="year"></span> <a href="p/stop.html?url=https://coffeencode.cc&viaPrivo=true">Coffee & Code</a>
+          <br>
+          Contact support via Email <a href="mailto:support@privo.fyi">support@privo.fyi</a>
+          Report Abuse via email <a href="mailto:abuse@privo.fyi">abuse@privo.fyi</a>
+        </p>
+      </div>
+      <div class="footer-links">
+        <a href="terms.html">Terms of Service</a>
+        <a href="privacy.html">Privacy Policy</a>
+      </div>
+    </footer>
+
+    <div class="footer-bottom"></div>
+
+  </div>
+
+  <script>
+    document.getElementById('year').textContent = new Date().getFullYear();
+  </script>
+
+</body>
+</html>
