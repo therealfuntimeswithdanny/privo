@@ -20,7 +20,7 @@
   <meta property="og:image" content="p/image.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inria+Serif:ital,wght@0,400;0,700;1,400&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
   <script src="https://kit.fontawesome.com/8f1701cd51.js" crossorigin="anonymous" defer></script>
   <link href="css/style.css" rel="stylesheet">
   <style>
@@ -37,7 +37,7 @@
     .privacy-hero .updated {
       margin-top: 18px;
       color: var(--muted);
-      font: 400 13px/1.5 "Inter", system-ui, sans-serif;
+      font: 400 13px/1.5 "Space Grotesk", system-ui, sans-serif;
     }
 
     .privacy-body {
@@ -67,7 +67,7 @@
     .privacy-section p,
     .privacy-section li {
       color: var(--muted-strong);
-      font: 400 14px/1.7 "Inter", system-ui, sans-serif;
+      font: 400 14px/1.7 "Space Grotesk", system-ui, sans-serif;
     }
 
     .privacy-section ul,
@@ -98,7 +98,7 @@
       width: 100%;
       margin: 16px 0;
       border-collapse: collapse;
-      font: 400 13px/1.5 "Inter", system-ui, sans-serif;
+      font: 400 13px/1.5 "Space Grotesk", system-ui, sans-serif;
     }
 
     .data-table th,
@@ -172,7 +172,7 @@
           <span class="first">Privacy</span>
           <span class="second">Policy</span>
         </h1>
-        <p class="updated">Last updated: November 1, 2026</p>
+        <p class="updated">Last updated: November 2, 2026</p>
       </section>
 
       <div class="privacy-body">
@@ -213,15 +213,39 @@
             or any personally identifiable information for anonymous link creation.
           </p>
 
-          <h3>Privo Cloud Accounts</h3>
+          <h3>Privo Cloud Accounts (Sign in with Google)</h3>
           <p>
-            If you choose to create an account, we store:
+            Privo Cloud accounts are created by signing in with your Google Account. When you do,
+            we ask Google only for the information covered by two OAuth scopes:
+            <strong>userinfo.email</strong> (your primary Google Account email address) and
+            <strong>userinfo.profile</strong> (the basic profile information you have made available
+            on your Google Account). We receive and store:
           </p>
           <ul>
-            <li><strong>Your email address</strong> — stored in a Cloudflare D1 SQL database</li>
+            <li>
+              <strong>Your email address</strong> — your primary Google Account email address,
+              which serves as your user ID. Stored in a Cloudflare D1 SQL database.
+            </li>
+            <li>
+              <strong>Your name</strong> — as it appears on your Google Account profile.
+              Used to display your account profile within Privo.
+            </li>
+            <li>
+              <strong>Your profile photo</strong> — the image address of your Google Account
+              profile picture. Used only to display your avatar within Privo.
+            </li>
             <li><strong>Your links</strong> — stored in a separate Cloudflare D1 database, associated with your account</li>
             <li><strong>Uploaded Media</strong> — images you uploaded for custom SEO tags</li>
           </ul>
+          <p>
+            Google handles the sign-in process itself. We never see or store your Google
+            Account password, and we do not request access to any other part of your Google
+            Account — no contacts, files, calendars, or activity. We use the information above
+            only to identify your account and display your profile in the Service, and we do not
+            use it to serve advertising. Our use of this data complies with
+            <a href="https://developers.google.com/terms/api-services-user-data-policy" rel="noopener">Google's API Services User Data Policy</a>,
+            including its Limited Use requirements.
+          </p>
 
           <h3>What We Never Collect</h3>
           <ul>
@@ -229,6 +253,7 @@
             <li>IP addresses of visitors who follow shortened links</li>
             <li>Browser fingerprints or device identifiers</li>
             <li>Cookies for tracking or advertising purposes</li>
+            <li>Your Google Account password or credentials</li>
             <li>Location data</li>
             <li>Social media profiles or demographic information</li>
           </ul>
@@ -244,7 +269,8 @@
                 Account Database
               </div>
               <p>
-                Email addresses are stored in a Cloudflare D1 SQL database.
+                Email addresses (used as user IDs), names, and profile photo addresses are
+                stored in a Cloudflare D1 SQL database.
                 This database is separate from link data and encrypted at rest.
               </p>
             </div>
@@ -386,8 +412,10 @@
           <ul>
             <li>Provide the link shortening and redirection service</li>
             <li>Generate link previews that match the destination (titles, descriptions, and images)</li>
+            <li>Identify your account when you sign in with Google</li>
+            <li>Display your name and profile photo within your Privo Cloud account</li>
             <li>Manage your account (if you create one)</li>
-            <li>Send transactional emails (e.g., account verification, password resets)</li>
+            <li>Send transactional emails (e.g., sign-in and account notices)</li>
             <li>Respond to support requests or abuse reports</li>
             <li>Enforce our <a href="terms.html">Terms of Service</a></li>
           </ul>
@@ -404,7 +432,7 @@
             Cloudflare Email Sending. We send emails only when necessary:
           </p>
           <ul>
-            <li>Account verification</li>
+            <li>Account sign-in and security notices</li>
             <li>Important service announcements</li>
             <li>Responses to your support inquiries</li>
           </ul>
@@ -443,6 +471,14 @@
               our instructions.
             </li>
             <li>
+              <strong>Google Sign-In:</strong> When you sign in with Google, Google processes the
+              authentication and provides us with your email address, name, and profile photo, as
+              described in Section 2. Google is a processor in this exchange; we do not share your
+              Privo data with Google, and we do not use Google sign-in data for advertising. Our
+              handling of this data follows Google's API Services User Data Policy, including the
+              Limited Use requirements.
+            </li>
+            <li>
               <strong>Google Web Risk:</strong> receives a short hash prefix of each destination when
               a link is created (see Section 4).
             </li>
@@ -463,7 +499,7 @@
             </thead>
             <tbody>
               <tr>
-                <td>Email address</td>
+                <td>Account email address, name, and profile photo</td>
                 <td>Until you delete your account</td>
               </tr>
               <tr>
@@ -489,9 +525,11 @@
             </tbody>
           </table>
           <p>
-            When you delete your account, your email and associated links, including their stored
-            previews, are removed from our databases and storage. Anonymous links persist until
-            they are removed for abuse or at our discretion.
+            When you delete your account, your email address, name, profile photo reference, and
+            associated links, including their stored previews, are removed from our databases and
+            storage. Anonymous links persist until they are removed for abuse or at our discretion.
+            Signing out of Privo does not delete your account; you can request deletion at any
+            time via <a href="mailto:support@privo.fyi">support@privo.fyi</a>.
           </p>
         </section>
 
@@ -502,7 +540,7 @@
           </p>
           <ul>
             <li><strong>Access:</strong> Request a copy of the data we hold about you</li>
-            <li><strong>Correction:</strong> Update your email address or account details</li>
+            <li><strong>Correction:</strong> Update your account details (your name and photo follow your Google Account profile; you can update them there)</li>
             <li><strong>Deletion:</strong> Delete your account and associated data</li>
             <li><strong>Portability:</strong> Export your links before account deletion</li>
             <li><strong>Objection:</strong> Object to certain data processing (though we process minimal data by design)</li>
@@ -522,6 +560,7 @@
             <li>All data in transit is encrypted via HTTPS/TLS</li>
             <li>Cloudflare D1 databases are encrypted at rest</li>
             <li>Account and link databases are logically separated</li>
+            <li>Sign-in is delegated to Google OAuth; we never store or handle your Google password</li>
             <li>Preview images are type-checked and size-limited before storage, and served with restrictive security headers</li>
             <li>Access to production databases is restricted and logged</li>
             <li>We regularly review our security practices</li>

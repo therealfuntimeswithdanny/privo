@@ -42,7 +42,7 @@ body {
     var(--bg);
 
   color: var(--black);
-  font-family: "Inria Serif", Georgia, serif;
+  font-family: "Space Grotesk", system-ui, sans-serif;
 
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;

@@ -37,8 +37,8 @@
     <a class="proceed" id="proceed" href="#" rel="noreferrer noopener" hidden>Proceed</a>
 
     <p class="disclaimer" id="disclaimer" hidden>
-      Privo can’t determine the authenticity of this site, if you believe this
-      site is malicious please <a id="report-inline" href="abuse.html">report it</a>
+      <span id="disclaimer-text">Privo can’t determine the authenticity of this site, if you believe this
+      site is malicious please</span> <a id="report-inline" href="abuse.html">report it</a>
     </p>
 
     <noscript>
@@ -283,10 +283,21 @@
           return;
         }
 
-        showDestination();
+        showDestination(result.status);
       });
 
-      function showDestination() {
+      function showDestination(status) {
+      /*
+       * Only a completed check earns the "passed" wording. Unchecked keeps the
+       * original text. A pass means "not on Google's known-threat lists", so
+       * the copy stops short of calling the site safe.
+       */
+      if (status === "clean") {
+        $("disclaimer-text").textContent =
+          "This link passed the Google Web Risk check. " +
+          "Privo can’t guarantee a site is safe, if you believe this site is malicious please";
+      }
+
       renderLede(target, viaPrivo ? "" : sourceName);
 
       sourceNote.hidden = false;

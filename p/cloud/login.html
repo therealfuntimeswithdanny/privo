@@ -1,0 +1,510 @@
+<!doctype html>
+
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="description" content="Sign in to Privo Cloud: bulk editing, custom domains, custom SEO tags, teams and an API for your short links.">
+  <meta name="robots" content="noindex, follow">
+  <meta name="theme-color" content="#1c1310">
+  <meta name="color-scheme" content="dark">
+  <link rel="canonical" href="https://privo.fyi/cloud/signin">
+  <title>Sign in — Privo Cloud</title>
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Privo">
+  <meta property="og:title" content="Sign in — Privo Cloud">
+  <meta property="og:description" content="Sign in to Privo Cloud.">
+  <meta property="og:url" content="https://privo.fyi/cloud/signin">
+  <link rel="icon" type="image/x-icon" href="https://danielmorrisey.com/media/images/seo/favicons/privo.svg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400&family=Space+Grotesk:wght@400&display=swap" rel="stylesheet">
+  <script src="https://kit.fontawesome.com/8f1701cd51.js" crossorigin="anonymous" defer></script>
+  <style>
+    /* Privo Cloud sign in — built from Figma "MacBook Air - 2" (Coffee & Code file, node 243:4) */
+
+    :root {
+      --bg: #1c1310;
+      --peach: #d4975c;
+      --cream: #e8c28a;
+      --black: #000;
+
+      --radius-btn: 10px;
+    }
+
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+    }
+
+    html {
+      background: var(--bg);
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      min-height: 100dvh;
+
+      background: var(--bg);
+      color: var(--peach);
+      font-family: "Space Grotesk", system-ui, sans-serif;
+
+      text-rendering: optimizeLegibility;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    ::selection {
+      background: var(--peach);
+      color: var(--bg);
+    }
+
+    a {
+      color: inherit;
+    }
+
+    a {
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    :focus-visible {
+      outline: 3px solid var(--cream);
+      outline-offset: 3px;
+    }
+
+    .skip-link {
+      position: fixed;
+      z-index: 9999;
+      top: 12px;
+      left: 12px;
+
+      padding: 10px 14px;
+
+      border-radius: 7px;
+      background: var(--cream);
+      color: var(--bg);
+
+      font: 600 12px/1 "Inter", system-ui, sans-serif;
+      text-decoration: none;
+
+      transform: translateY(-150%);
+      transition: transform .18s ease;
+    }
+
+    .skip-link:focus {
+      transform: translateY(0);
+    }
+
+    /* --------------------------------
+       Layout: 440px feature panel + sign in
+    -------------------------------- */
+
+    .screen {
+      display: grid;
+      grid-template-columns: 440px minmax(0, 1fr);
+      min-height: 100vh;
+      min-height: 100dvh;
+    }
+
+    /* Let grid items shrink below their content's minimum width on small screens */
+    .features,
+    .signin,
+    .feature > div {
+      min-width: 0;
+    }
+
+    /* --------------------------------
+       Left: what you get with Privo Cloud
+    -------------------------------- */
+
+    .features {
+      padding: 60px 19px 40px;
+
+      background: var(--peach);
+      color: var(--black);
+    }
+
+    .features h2 {
+      display: grid;
+      place-items: center;
+
+      width: 401px;
+      max-width: 100%;
+      height: 100px;
+      margin: 0;
+
+      text-align: center;
+      font-size: 32px;
+      font-weight: 400;
+      line-height: normal;
+    }
+
+    .feature-list {
+      display: flex;
+      flex-direction: column;
+      gap: 28px;
+
+      margin: 40px 0 0;
+      padding: 0;
+
+      list-style: none;
+    }
+
+    .feature {
+      display: grid;
+      grid-template-columns: var(--icon-w, 86px) minmax(0, 322px);
+      column-gap: var(--icon-gap, 13px);
+      align-items: start;
+
+      min-height: 87px;
+    }
+
+    /* Font Awesome 7 gives icons a 1.25em box by default; pin to the glyph's own width */
+    .feature .feature-icon,
+    .btn .ico i {
+      width: auto;
+    }
+
+    .feature-icon {
+      font-size: 86px;
+      line-height: 1;
+    }
+
+    .feature h3 {
+      height: 43px;
+      margin: 0;
+
+      font-size: 48px;
+      font-weight: 400;
+      line-height: 43px;
+      white-space: nowrap;
+    }
+
+    .feature p {
+      display: flex;
+      align-items: center;
+
+      min-height: 48px;
+      margin: -5px 0 0;
+
+      font-size: 16px;
+      line-height: 21px;
+    }
+
+    .feature--teams {
+      --icon-w: 65px;
+      --icon-gap: 24px;
+    }
+
+    /* --------------------------------
+       Right: sign in
+    -------------------------------- */
+
+    .signin {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+
+      padding: 28px 20px 40px;
+    }
+
+    .signin h1 {
+      display: grid;
+      place-items: center;
+
+      width: 401px;
+      max-width: 100%;
+      height: 100px;
+      margin: 0;
+
+      color: var(--peach);
+      text-align: center;
+      font-size: 54px;
+      font-weight: 400;
+      line-height: normal;
+    }
+
+    .options {
+      display: flex;
+      flex-direction: column;
+
+      width: 394px;
+      max-width: 100%;
+      margin-top: 94px;
+    }
+
+    .options .group {
+      display: flex;
+      flex-direction: column;
+      gap: 25px;
+    }
+
+    .options hr {
+      width: 100%;
+      margin: 16px 0;
+
+      border: 0;
+      border-top: 1px solid var(--peach);
+    }
+
+    .btn {
+      --ico: 50px;
+
+      display: flex;
+      align-items: center;
+      gap: 18px;
+
+      height: 68.95px;
+      padding: 0 20px;
+
+      border-radius: var(--radius-btn);
+
+      background: var(--peach);
+      color: var(--black);
+
+      font: 400 16px/normal "Inter", system-ui, sans-serif;
+      text-decoration: none;
+
+      transition:
+        transform .18s ease,
+        background .18s ease;
+    }
+
+    .btn:hover {
+      transform: translateY(-1px);
+      background: var(--cream);
+    }
+
+    .btn:active {
+      transform: none;
+    }
+
+    .btn .ico {
+      display: grid;
+      place-items: center;
+      flex: none;
+
+      width: 49px;
+      height: 50px;
+
+      font-size: var(--ico);
+      line-height: 1;
+    }
+
+    /* 576-wide glyphs scale down so every icon is about 49px wide, as in the design */
+    .btn--wide {
+      --ico: 43.6px;
+    }
+
+    .terms {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+
+      width: 392px;
+      max-width: 100%;
+      min-height: 48px;
+      margin: 6px 0 0;
+
+      text-align: center;
+      font-size: 16px;
+      line-height: normal;
+    }
+
+    .terms a {
+      text-underline-offset: 3px;
+    }
+
+    .terms a:hover {
+      color: var(--cream);
+    }
+
+    /* --------------------------------
+       Motion
+    -------------------------------- */
+
+    @media (prefers-reduced-motion: reduce) {
+      *,
+      *::before,
+      *::after {
+        animation-duration: .01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: .01ms !important;
+      }
+    }
+
+    /* --------------------------------
+       Responsive: sign in first, features below
+    -------------------------------- */
+
+    @media (max-width: 900px) {
+      .screen {
+        grid-template-columns: 1fr;
+        min-height: 0;
+      }
+
+      .signin {
+        order: -1;
+        padding-top: 32px;
+      }
+
+      .signin h1 {
+        height: auto;
+        padding: 12px 0;
+
+        font-size: 44px;
+      }
+
+      .options {
+        margin-top: 36px;
+      }
+
+      .features {
+        padding: 48px 24px 56px;
+      }
+
+      .features h2 {
+        width: 100%;
+        height: auto;
+        padding-bottom: 8px;
+      }
+
+      .feature-list {
+        margin-top: 24px;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .feature {
+        grid-template-columns: var(--icon-w-sm, 64px) minmax(0, 1fr);
+        column-gap: 14px;
+      }
+
+      .feature--teams {
+        --icon-w-sm: 48px;
+      }
+
+      .feature-icon {
+        font-size: 64px;
+      }
+
+      .feature h3 {
+        height: auto;
+        font-size: 32px;
+        line-height: 1.1;
+        white-space: normal;
+      }
+
+      .feature p {
+        margin-top: 4px;
+      }
+
+      .signin h1 {
+        font-size: 38px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <a class="skip-link" href="#signin-title">Skip to sign in</a>
+
+  <div class="screen">
+
+    <!-- Left: Privo Cloud features -->
+    <aside class="features" aria-labelledby="features-title">
+      <h2 id="features-title">With Privo Cloud you can:</h2>
+
+      <ul class="feature-list">
+        <li class="feature">
+          <i class="fa-solid fa-key feature-icon" aria-hidden="true"></i>
+          <div>
+            <h3>Simple API</h3>
+            <p>Build Privo into your app with<br>a simple API with unlimited usage</p>
+          </div>
+        </li>
+
+        <li class="feature">
+          <i class="fa-solid fa-magnifying-glass feature-icon" aria-hidden="true"></i>
+          <div>
+            <h3>Bulk Editing</h3>
+            <p>Create links from CSV, bulk edit &amp; delete links on the fly</p>
+          </div>
+        </li>
+
+        <li class="feature">
+          <i class="fa-solid fa-globe feature-icon" aria-hidden="true"></i>
+          <div>
+            <h3>Brand Links</h3>
+            <p>Take your links to the next level with unlimited Custom Domains</p>
+          </div>
+        </li>
+
+        <li class="feature">
+          <i class="fa-solid fa-wand-magic-sparkles feature-icon" aria-hidden="true"></i>
+          <div>
+            <h3>Custom SEO</h3>
+            <p>Edit and customize Social SEO tags for your short links</p>
+          </div>
+        </li>
+
+        <li class="feature feature--teams">
+          <i class="fa-solid fa-building feature-icon" aria-hidden="true"></i>
+          <div>
+            <h3>Teams &amp; Orgs</h3>
+            <p>Unlimited Teams and Organizations</p>
+          </div>
+        </li>
+      </ul>
+    </aside>
+
+    <!-- Right: sign in -->
+    <main class="signin">
+      <h1 id="signin-title">Welcome Back!</h1>
+
+      <nav class="options" aria-label="Sign in options">
+        <a class="btn btn--wide" href="/cloud/auth/create" data-provider="create">
+          <span class="ico"><i class="fa-solid fa-user-plus" aria-hidden="true"></i></span>
+          Create an Account
+        </a>
+
+        <hr>
+
+        <div class="group">
+          <a class="btn" href="/cloud/auth/coffee-and-code" data-provider="coffee-and-code">
+            <span class="ico"><i class="fa-solid fa-mug-hot" aria-hidden="true"></i></span>
+            Sign in with Coffee &amp; Code
+          </a>
+
+          <a class="btn" href="/cloud/auth/google" data-provider="google">
+            <span class="ico"><i class="fa-brands fa-google" aria-hidden="true"></i></span>
+            Sign in with Google
+          </a>
+
+          <a class="btn" href="/cloud/auth/github" data-provider="github">
+            <span class="ico"><i class="fa-brands fa-github" aria-hidden="true"></i></span>
+            Sign in with GitHub
+          </a>
+
+          <a class="btn btn--wide" href="/cloud/auth/bluesky" data-provider="bluesky">
+            <span class="ico"><i class="fa-brands fa-bluesky" aria-hidden="true"></i></span>
+            Sign in with Bluesky
+          </a>
+        </div>
+      </nav>
+
+      <p class="terms">
+        <span>
+          By clicking Sign in you Agree to our
+          <a href="/p/privacy.html">Privacy Policy</a> and
+          <a href="/p/terms.html">Terms of Service</a>
+        </span>
+      </p>
+    </main>
+
+  </div>
+
+</body>
+</html>
