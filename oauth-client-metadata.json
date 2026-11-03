@@ -3,8 +3,8 @@
   "client_name": "Privo.fyi by Coffee & Code",
   "client_uri": "https://privo.fyi",
   "logo_uri": "https://privo.fyi/favicon.png",
-  "tos_uri": "https://privo.fyi/terms",
-  "policy_uri": "https://privo.fyi/privacy",
+  "tos_uri": "https://privo.fyi/legal/terms",
+  "policy_uri": "https://privo.fyi/legal/privacy",
   "redirect_uris": [
     "https://api.privo.fyi/cloud/auth/atproto/callback"
   ],

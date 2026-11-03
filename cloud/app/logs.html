@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#1c1310">
+    <meta name="robots" content="noindex, nofollow">
+    <title>Privo Cloud — Logs</title>
+    <script src="https://kit.fontawesome.com/8f1701cd51.js" crossorigin="anonymous" defer></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/cloud/app/app.css">
+    <style>
+    .page-title {
+      font-weight:400;
+      font-size:40px;
+      line-height:1.12;
+      margin:0 0 14px 9px;
+      letter-spacing:.2px
+    }
+    .logs-panel {
+      margin-left:9px;
+      min-height:480px;
+      padding-bottom:16px
+    }
+    .logs-panel .panel-head {
+      margin-bottom:10px
+    }
+    .chips {
+      display:flex;
+      flex-wrap:wrap;
+      gap:8px;
+      margin:0 0 10px
+    }
+    .chip {
+      height:34px;
+      padding:0 15px;
+      border:0;
+      border-radius:9px;
+      background:var(--bg);
+      color:white;
+      font-size:15px;
+      cursor:pointer;
+      transition:background .15s
+    }
+    .chip:hover {
+      background:#302019
+    }
+    .chip[aria-pressed=true] {
+      background:#302019;
+      box-shadow:inset 0 0 0 2px var(--cream)
+    }
+    .logs-panel .table-wrap {
+      flex:0 0 auto;
+      overflow:visible
+    }
+    .logs-panel .data-table th {
+      font-size:15px
+    }
+    .logs-panel .data-table td {
+      font-size:13px;
+      padding:9px 7px
+    }
+    .logs-panel .data-table th:nth-child(1) {
+      width:27%
+    }
+    .logs-panel .data-table th:nth-child(2) {
+      width:11%
+    }
+    .logs-panel .data-table th:nth-child(3) {
+      width:38%
+    }
+    .logs-panel .data-table th:nth-child(4) {
+      width:24%
+    }
+    .risk-medium {
+      font-weight:600
+    }
+    .footer-row {
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      margin-top:12px;
+      font-size:14px
+    }
+    .more {
+      height:40px;
+      padding:0 20px;
+      border:0;
+      border-radius:10px;
+      background:var(--bg);
+      color:white;
+      font-size:16px;
+      cursor:pointer
+    }
+    .more:hover {
+      background:#302019
+    }
+    .more:disabled {
+      opacity:.6;
+      cursor:progress
+    }
+    @media(max-width:700px) {
+      .page-title {
+        font-size:34px;
+        margin-left:0
+      }
+      .logs-panel {
+        margin-left:0
+      }
+      .logs-panel .table-wrap {
+        overflow:auto
+      }
+      .logs-panel .data-table {
+        min-width:560px
+      }
+    }
+    </style>
+  </head>
+  <body><a class="skip" href="#main">Skip to content</a>
+    <div class="app">
+      <aside class="sidebar" aria-label="Main navigation">
+        <div class="brand">Privo Cloud</div>
+        <nav class="nav">
+          <a href="dashboard.html"><i class="fa-solid fa-house" aria-hidden="true"></i>Home</a>
+          <a href="create.html"><i class="fa-solid fa-plus" aria-hidden="true"></i>Create</a>
+          <a href="links.html"><i class="fa-solid fa-list-ul" aria-hidden="true"></i>Links List</a>
+          <a href="bulk.html"><i class="fa-solid fa-box-archive" aria-hidden="true"></i>Bulk Tools</a>
+          <a href="domains.html"><i class="fa-solid fa-globe" aria-hidden="true"></i>Custom Domains</a>
+          <a href="teams.html"><i class="fa-solid fa-building" aria-hidden="true"></i>Team Management</a>
+          <a href="logs.html" aria-current="page"><i class="fa-solid fa-scroll" aria-hidden="true"></i>Logs</a>
+        </nav>
+        <div class="side-bottom"><form method="post" action="https://api.privo.fyi/cloud/auth/logout" id="logoutForm"><button class="logout" type="submit"><i class="fa-solid fa-right-from-bracket" aria-hidden="true"></i>Log Out</button></form>
+          <div class="user-card"><img class="avatar" src="" alt="" referrerpolicy="no-referrer" hidden data-avatar><span class="name" data-name></span>
+          </div>
+        </div>
+      </aside>
+      <main id="main">
+        <h1 class="page-title">Logs</h1>
+        <section class="panel logs-panel" aria-label="Audit logs">
+          <h2 class="panel-head search-head"><i class="fa-solid fa-scroll" aria-hidden="true"></i><input id="logSearch" type="search" placeholder="Search loaded audit logs" aria-label="Search loaded audit logs"></h2>
+          <div class="chips" role="group" aria-label="Filter by type">
+            <button class="chip" type="button" data-category="all" aria-pressed="true">All</button>
+            <button class="chip" type="button" data-category="signin" aria-pressed="false">Sign-ins</button>
+            <button class="chip" type="button" data-category="link" aria-pressed="false">Links</button>
+            <button class="chip" type="button" data-category="r2" aria-pressed="false">Files</button>
+            <button class="chip" type="button" data-category="d1" aria-pressed="false">Database</button>
+          </div>
+          <div class="table-wrap">
+            <table class="data-table logs-table">
+              <thead>
+                <tr>
+                  <th>Action</th>
+                  <th>Risk Level</th>
+                  <th>Details</th>
+                  <th>Timestamp</th>
+                </tr>
+              </thead>
+              <tbody id="logRows"></tbody>
+            </table>
+          </div>
+          <div class="footer-row">
+            <span id="count" aria-live="polite"></span>
+            <button class="more" id="more" type="button" hidden>Load more</button>
+          </div>
+        </section>
+      </main>
+    </div>
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+    <script src="/cloud/app/app.js"></script>
+    <script>
+    (() => {
+      const { API, $, showToast, formatBytes, formatTime, shorten } = Privo;
+
+      Privo.loadMe();
+
+      const body = $("logRows");
+      let category = "all";
+      let next = null;
+      let loading = false;
+      let shown = 0;
+      let request = 0; // ignores a slow response after the filter has changed
+
+      const cap = (t) => (t ? t.charAt(0).toUpperCase() + t.slice(1) : "");
+
+      function describe(l) {
+        switch (l.category) {
+          case "signin":
+            return "Signed in" + (l.method ? " with " + cap(l.method) : "");
+          case "link":
+            return { create: "Created", update: "Edited", delete: "Deleted" }[l.action] + " link " + shorten(l.shortLink, 40);
+          case "r2":
+            return (l.action === "upload" ? "Uploaded" : "Deleted") + " file";
+          case "d1":
+            return { insert: "Added", update: "Changed", delete: "Removed" }[l.action] + " " + (l.table || "record");
+          default:
+            return l.action;
+        }
+      }
+
+      function details(l) {
+        switch (l.category) {
+          case "signin":
+            return [l.country, l.os, l.browser].filter(Boolean).join(" · ");
+          case "link":
+            return l.directUrl ? "Redirects to " + shorten(l.directUrl, 70) : "";
+          case "r2":
+            return [shorten(l.fileUrl || l.r2Key, 60), l.bytes != null ? formatBytes(l.bytes) : ""].filter(Boolean).join(" · ");
+          case "d1":
+            return "1 row written to " + (l.table || "the database");
+          default:
+            return "";
+        }
+      }
+
+      function addRows(logs) {
+        for (const l of logs) {
+          const tr = document.createElement("tr");
+          const cells = [describe(l), l.risk, details(l), formatTime(l.at)];
+
+          cells.forEach((text, i) => {
+            const td = document.createElement("td");
+            td.textContent = text;
+            if (i === 1 && l.risk === "Medium") td.className = "risk-medium";
+            tr.append(td);
+          });
+
+          body.append(tr);
+        }
+        shown += logs.length;
+      }
+
+      function showEmpty() {
+        body.textContent = "";
+        const tr = document.createElement("tr");
+        const td = document.createElement("td");
+        td.className = "empty";
+        td.colSpan = 4;
+        td.textContent = "Nothing logged yet.";
+        tr.append(td);
+        body.append(tr);
+      }
+
+      function applySearch() {
+        const q = $("logSearch").value.toLowerCase();
+        for (const row of body.querySelectorAll("tr")) {
+          row.hidden = !!q && !row.textContent.toLowerCase().includes(q);
+        }
+      }
+
+      function updateFooter() {
+        $("count").textContent = shown ? "Showing " + shown + " log" + (shown === 1 ? "" : "s") : "";
+        $("more").hidden = next === null;
+      }
+
+      async function load(reset) {
+        if (loading && !reset) return;
+
+        const mine = ++request;
+        loading = true;
+        $("more").disabled = true;
+
+        if (reset) {
+          body.textContent = "";
+          shown = 0;
+          next = null;
+        }
+
+        let url = API + "/api/cloud/logs";
+        const q = [];
+        if (category !== "all") q.push("category=" + encodeURIComponent(category));
+        if (!reset && next !== null) q.push("before=" + next);
+        if (q.length) url += "?" + q.join("&");
+
+        try {
+          const res = await fetch(url, { credentials: "include", cache: "no-store" });
+
+          if (mine !== request) return;
+
+          if (res.status === 401) {
+            window.location.replace("/cloud/signin");
+            return;
+          }
+          if (!res.ok) throw new Error("HTTP " + res.status);
+
+          const data = await res.json();
+          if (mine !== request) return;
+
+          next = data.next;
+          if (!data.logs.length && reset) showEmpty();
+          else addRows(data.logs);
+
+          applySearch();
+          updateFooter();
+        } catch (_) {
+          if (mine === request) showToast("Couldn’t load the logs. Try refreshing.");
+        } finally {
+          if (mine === request) {
+            loading = false;
+            $("more").disabled = false;
+          }
+        }
+      }
+
+      $("logSearch").addEventListener("input", applySearch);
+      $("more").addEventListener("click", () => load(false));
+
+      for (const chip of document.querySelectorAll(".chip")) {
+        chip.addEventListener("click", () => {
+          category = chip.dataset.category;
+          for (const c of document.querySelectorAll(".chip")) {
+            c.setAttribute("aria-pressed", String(c === chip));
+          }
+          load(true);
+        });
+      }
+
+      load(true);
+    })();
+    </script>
+  </body>
+</html>

@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#1c1310">
+    <meta name="robots" content="noindex, nofollow">
+    <title>Privo Cloud — Create</title>
+    <script src="https://kit.fontawesome.com/8f1701cd51.js" crossorigin="anonymous" defer></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/cloud/app/app.css">
+    <style>
+    .page-title {
+      font-weight:400;
+      font-size:40px;
+      line-height:1.12;
+      margin:0 0 14px 9px;
+      letter-spacing:.2px
+    }
+    .create-grid {
+      display:grid;
+      grid-template-columns:repeat(2,minmax(0,1fr));
+      gap:13px;
+      margin-left:9px;
+      align-items:start
+    }
+    .create-grid .panel {
+      padding-bottom:18px
+    }
+    .label {
+      display:block;
+      font-size:14px;
+      margin:10px 0 5px
+    }
+    .field {
+      margin:0
+    }
+    .field .prefix {
+      color:var(--cream);
+      flex:0 0 auto
+    }
+    .field input {
+      width:100%;
+      min-width:0;
+      background:transparent;
+      color:white;
+      border:0;
+      outline:0;
+      font-size:20px;
+      padding:0
+    }
+    .field input::placeholder {
+      color:white;
+      opacity:.55
+    }
+    .field:focus-within {
+      box-shadow:0 0 0 3px var(--cream)
+    }
+    .hint {
+      font-size:12px;
+      margin:5px 0 0;
+      opacity:.8
+    }
+    .submit,.secondary,.copy {
+      border:0;
+      cursor:pointer;
+      color:white;
+      background:var(--bg);
+      border-radius:10px;
+      font-size:20px;
+      transition:background .15s
+    }
+    .submit:hover,.secondary:hover,.copy:hover {
+      background:#302019
+    }
+    .submit {
+      width:100%;
+      height:45px;
+      margin-top:18px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      gap:12px
+    }
+    .submit i {
+      color:var(--peach);
+      font-size:26px
+    }
+    .submit:disabled {
+      opacity:.6;
+      cursor:progress
+    }
+    .form-error {
+      margin:12px 0 0;
+      font-size:15px;
+      font-weight:500;
+      color:#5a1d12
+    }
+    .placeholder {
+      margin:14px 0 4px;
+      font-size:16px
+    }
+    .result-label {
+      font-size:14px;
+      margin:10px 0 5px
+    }
+    .short-row {
+      display:flex;
+      align-items:center;
+      gap:10px;
+      height:45px;
+      border-radius:10px;
+      background:var(--bg);
+      color:white;
+      padding:0 6px 0 14px
+    }
+    .short-row output {
+      flex:1 1 auto;
+      min-width:0;
+      font-size:20px;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      white-space:nowrap;
+      user-select:all
+    }
+    .copy {
+      height:33px;
+      padding:0 14px;
+      font-size:15px;
+      background:#302019;
+      flex:0 0 auto
+    }
+    .copy:hover {
+      background:#3d2a21
+    }
+    .safety {
+      font-size:14px;
+      margin:10px 0 0
+    }
+    .preview {
+      margin-top:14px;
+      border-radius:10px;
+      background:var(--bg);
+      color:white;
+      overflow:hidden
+    }
+    .preview img {
+      display:block;
+      width:100%;
+      max-height:170px;
+      object-fit:cover
+    }
+    .preview .text {
+      padding:10px 14px 12px
+    }
+    .preview .site {
+      font-size:12px;
+      color:var(--cream);
+      margin:0 0 2px
+    }
+    .preview .title {
+      font-size:17px;
+      margin:0 0 4px;
+      overflow-wrap:anywhere
+    }
+    .preview .desc {
+      font-size:13px;
+      margin:0;
+      opacity:.85;
+      overflow-wrap:anywhere
+    }
+    .secondary {
+      margin-top:14px;
+      height:40px;
+      padding:0 18px;
+      font-size:16px
+    }
+    @media(max-width:1050px) {
+      .create-grid {
+        grid-template-columns:1fr
+      }
+    }
+    @media(max-width:700px) {
+      .page-title {
+        font-size:34px;
+        margin-left:0
+      }
+      .create-grid {
+        margin-left:0
+      }
+      .field input,.short-row output {
+        font-size:17px
+      }
+    }
+    </style>
+  </head>
+  <body><a class="skip" href="#main">Skip to content</a>
+    <div class="app">
+      <aside class="sidebar" aria-label="Main navigation">
+        <div class="brand">Privo Cloud</div>
+        <nav class="nav">
+          <a href="dashboard.html"><i class="fa-solid fa-house" aria-hidden="true"></i>Home</a>
+          <a href="create.html" aria-current="page"><i class="fa-solid fa-plus" aria-hidden="true"></i>Create</a>
+          <a href="links.html"><i class="fa-solid fa-list-ul" aria-hidden="true"></i>Links List</a>
+          <a href="bulk.html"><i class="fa-solid fa-box-archive" aria-hidden="true"></i>Bulk Tools</a>
+          <a href="domains.html"><i class="fa-solid fa-globe" aria-hidden="true"></i>Custom Domains</a>
+          <a href="teams.html"><i class="fa-solid fa-building" aria-hidden="true"></i>Team Management</a>
+          <a href="logs.html"><i class="fa-solid fa-scroll" aria-hidden="true"></i>Logs</a>
+        </nav>
+        <div class="side-bottom"><form method="post" action="https://api.privo.fyi/cloud/auth/logout" id="logoutForm"><button class="logout" type="submit"><i class="fa-solid fa-right-from-bracket" aria-hidden="true"></i>Log Out</button></form>
+          <div class="user-card"><img class="avatar" src="" alt="" referrerpolicy="no-referrer" hidden data-avatar><span class="name" data-name></span>
+          </div>
+        </div>
+      </aside>
+      <main id="main">
+        <h1 class="page-title">Create a Link</h1>
+        <div class="create-grid">
+          <section class="panel" aria-labelledby="formTitle">
+            <form id="createForm" novalidate>
+              <label class="label" id="formTitle" for="destination">Destination URL</label>
+              <div class="panel-head field"><i class="fa-solid fa-link" aria-hidden="true"></i><input id="destination" name="url" type="text" inputmode="url" autocomplete="off" spellcheck="false" placeholder="https://example.com/long/page" required></div>
+
+              <label class="label" for="shortcode">Custom ending (optional)</label>
+              <div class="panel-head field"><i class="fa-solid fa-pen" aria-hidden="true"></i><span class="prefix">privo.fyi/</span><input id="shortcode" name="shortcode" type="text" autocomplete="off" spellcheck="false" maxlength="20" placeholder="promo" aria-describedby="codeHint"></div>
+              <p class="hint" id="codeHint">4–20 letters and numbers. Leave it empty and Privo picks one.</p>
+
+              <p class="form-error" id="formError" role="alert" hidden></p>
+
+              <button class="submit" id="submit" type="submit"><i class="fa-solid fa-plus" aria-hidden="true"></i><span>Create Link</span></button>
+            </form>
+          </section>
+
+          <section class="panel" aria-labelledby="resultTitle" aria-live="polite">
+            <h2 class="label" id="resultTitle" style="font-weight:400">Your link</h2>
+            <p class="placeholder" id="placeholder">Your short link will appear here.</p>
+            <div id="result" hidden>
+              <div class="short-row"><output id="shortUrl"></output><button class="copy" id="copy" type="button"><i class="fa-solid fa-copy" aria-hidden="true"></i> Copy</button></div>
+              <p class="safety" id="safety"></p>
+              <div class="preview" id="preview" hidden>
+                <img id="previewImg" alt="" referrerpolicy="no-referrer" hidden>
+                <div class="text">
+                  <p class="site" id="previewSite"></p>
+                  <p class="title" id="previewTitle"></p>
+                  <p class="desc" id="previewDesc"></p>
+                </div>
+              </div>
+              <button class="secondary" id="another" type="button">Create another</button>
+            </div>
+          </section>
+        </div>
+      </main>
+    </div>
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+    <script src="/cloud/app/app.js"></script>
+    <script>
+    (() => {
+      const { API, $, showToast } = Privo;
+
+      const form = $("createForm");
+      const submit = $("submit");
+      const errorEl = $("formError");
+      const THREATS = {
+        MALWARE: "malware",
+        SOCIAL_ENGINEERING: "phishing or other social engineering",
+        UNWANTED_SOFTWARE: "unwanted software"
+      };
+
+      Privo.loadMe();
+
+      function showError(message) {
+        errorEl.textContent = message;
+        errorEl.hidden = !message;
+      }
+
+      function httpUrl(value) {
+        try {
+          const u = new URL(value);
+          return u.protocol === "http:" || u.protocol === "https:" ? u.href : null;
+        } catch (_) {
+          return null;
+        }
+      }
+
+      function showResult(data) {
+        $("placeholder").hidden = true;
+        $("result").hidden = false;
+        $("shortUrl").textContent = data.shortUrl.replace(/^https?:\/\//, "");
+        $("shortUrl").dataset.full = data.shortUrl;
+
+        $("safety").textContent =
+          data.safety === "clean"
+            ? "This link passed the Google Web Risk check."
+            : "Privo couldn’t run the Google Web Risk check right now. It will be checked again automatically.";
+
+        const p = data.preview || {};
+        const img = $("previewImg");
+        const image = p.image && httpUrl(p.image);
+
+        img.hidden = true;
+        img.onload = () => { img.hidden = false; };
+        img.onerror = () => { img.hidden = true; };
+        if (image) img.src = image;
+
+        $("previewSite").textContent = p.siteName || "";
+        $("previewTitle").textContent = p.title || "";
+        $("previewDesc").textContent = p.description || "";
+        $("preview").hidden = !(p.title || p.description || image);
+      }
+
+      function resetResult() {
+        $("result").hidden = true;
+        $("placeholder").hidden = false;
+      }
+
+      form.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        showError("");
+
+        let url = $("destination").value.trim();
+        if (!url) return showError("Enter the address you want to shorten.");
+        if (!/^[a-z][a-z0-9+.-]*:/i.test(url)) url = "https://" + url;
+
+        const target = httpUrl(url);
+        if (!target) return showError("That doesn’t look like a web address (it must start with http:// or https://).");
+
+        const shortcode = $("shortcode").value.trim();
+        if (shortcode && !/^[a-zA-Z0-9]{4,20}$/.test(shortcode)) {
+          return showError("The custom ending must be 4–20 letters and numbers.");
+        }
+
+        submit.disabled = true;
+        submit.querySelector("span").textContent = "Creating…";
+
+        try {
+          const res = await fetch(API + "/api/link", {
+            method: "POST",
+            credentials: "include",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(shortcode ? { url: target, shortcode } : { url: target })
+          });
+
+          let data = {};
+          try { data = await res.json(); } catch (_) { /* keep empty */ }
+
+          if (res.status === 201) {
+            showResult(data);
+            showToast("Link created");
+            return;
+          }
+
+          if (res.status === 422) {
+            const reasons = (data.threats || []).map((t) => THREATS[t] || "a security risk");
+            return showError(
+              "Google Web Risk flagged this address" + (reasons.length ? " for " + reasons.join(" and ") : "") +
+              ", so it can’t be shortened."
+            );
+          }
+
+          showError(data.error || "Something went wrong. Try again.");
+        } catch (_) {
+          showError("Couldn’t reach Privo. Check your connection and try again.");
+        } finally {
+          submit.disabled = false;
+          submit.querySelector("span").textContent = "Create Link";
+        }
+      });
+
+      $("copy").addEventListener("click", async () => {
+        const text = $("shortUrl").dataset.full || "";
+        try {
+          await navigator.clipboard.writeText(text);
+          showToast("Copied");
+        } catch (_) {
+          const range = document.createRange();
+          range.selectNodeContents($("shortUrl"));
+          const sel = getSelection();
+          sel.removeAllRanges();
+          sel.addRange(range);
+          showToast("Press Ctrl/Cmd+C to copy");
+        }
+      });
+
+      $("another").addEventListener("click", () => {
+        form.reset();
+        resetResult();
+        $("destination").focus();
+      });
+    })();
+    </script>
+  </body>
+</html>
