@@ -785,7 +785,7 @@
       fetch(API + "/api/cloud/dashboard", { credentials: "include", cache: "no-store" })
         .then((res) => {
           if (res.status === 401) {
-            window.location.replace("/cloud/signin");
+            window.location.replace("/cloud/login");
             return null;
           }
           if (!res.ok) throw new Error("HTTP " + res.status);
