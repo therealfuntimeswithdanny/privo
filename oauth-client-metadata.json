@@ -1,0 +1,22 @@
+{
+  "client_id": "https://privo.fyi/oauth-client-metadata.json",
+  "client_name": "Privo.fyi by Coffee & Code",
+  "client_uri": "https://privo.fyi",
+  "logo_uri": "https://privo.fyi/favicon.png",
+  "tos_uri": "https://privo.fyi/terms",
+  "policy_uri": "https://privo.fyi/privacy",
+  "redirect_uris": [
+    "https://api.privo.fyi/cloud/auth/atproto/callback"
+  ],
+  "scope": "atproto include:cc.coffeencode.authPrivo repo:app.bsky.actor.profile?action=create&action=update",
+  "grant_types": [
+    "authorization_code",
+    "refresh_token"
+  ],
+  "response_types": [
+    "code"
+  ],
+  "application_type": "web",
+  "token_endpoint_auth_method": "none",
+  "dpop_bound_access_tokens": true
+}
