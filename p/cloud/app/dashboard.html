@@ -1,0 +1,799 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#1c1310">
+    <title>Privo Cloud — Dashboard</title>
+    <script src="https://kit.fontawesome.com/8f1701cd51.js" crossorigin="anonymous" defer></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+    :root {
+      --bg:#1c1310;
+      --peach:#d4975c;
+      --cream:#e8c28a;
+      --white:#fff;
+      --ink:#170f0c;
+      --sidebar:250px
+    }
+    * {
+      box-sizing:border-box
+    }
+    html,body {
+      margin:0;
+      min-height:100%;
+      background:var(--bg)
+    }
+    body {
+      font-family:'Space Grotesk',sans-serif;
+      color:var(--peach);
+      -webkit-font-smoothing:antialiased
+    }
+    button,input {
+      font:inherit
+    }
+    a {
+      color:inherit
+    }
+    .skip {
+      position:absolute;
+      left:-9999px
+    }
+    .skip:focus {
+      left:10px;
+      top:10px;
+      z-index:10;
+      background:white;
+      color:black;
+      padding:8px
+    }
+    .app {
+      min-height:100vh;
+      display:grid;
+      grid-template-columns:var(--sidebar) minmax(0,1fr)
+    }
+    .sidebar {
+      height:100vh;
+      min-height:600px;
+      position:sticky;
+      top:0;
+      background:var(--peach);
+      color:var(--bg);
+      padding:3px 10px 10px;
+      display:flex;
+      flex-direction:column
+    }
+    .brand {
+      font-size:38px;
+      line-height:1.25;
+      font-weight:400;
+      letter-spacing:-1.5px;
+      margin:0 0 10px;
+      white-space:nowrap
+    }
+    .nav {
+      display:flex;
+      flex-direction:column;
+      gap:12px
+    }
+    .nav a,.logout,.user-card {
+      height:45px;
+      border-radius:11px;
+      background:var(--bg);
+      color:white;
+      display:flex;
+      align-items:center;
+      text-decoration:none;
+      padding:0 10px;
+      gap:11px;
+      font-size:15px;
+      font-weight:400
+    }
+    .nav a {
+      transition:background .15s
+    }
+    .nav a:hover,.logout:hover {
+      background:#302019
+    }
+    .nav a[aria-current=page] {
+      background:var(--bg)
+    }
+    .nav i,.logout i {
+      width:29px;
+      flex:0 0 29px;
+      text-align:center;
+      color:var(--peach);
+      font-size:35px
+    }
+    .nav a:nth-child(3) i {
+      font-size:34px
+    }
+    .nav a:nth-child(4) i {
+      font-size:32px
+    }
+    .nav a:nth-child(5) i {
+      font-size:34px
+    }
+    .nav a:nth-child(6) i {
+      font-size:32px
+    }
+    .nav a:nth-child(7) i {
+      font-size:32px
+    }
+    .side-bottom {
+      margin-top:auto
+    }
+    .logout {
+      width:100%;
+      border:0;
+      cursor:pointer;
+      margin-bottom:18px;
+      text-align:left
+    }
+    .logout i {
+      font-size:35px
+    }
+    .user-card {
+      height:55px;
+      padding:4px 7px;
+      gap:7px
+    }
+    .avatar {
+      width:46px;
+      height:46px;
+      object-fit:cover;
+      border-radius:50%;
+      flex:0 0 46px
+    }
+    .user-card .name {
+      font-size:15px;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis
+    }
+    main {
+      min-width:0;
+      padding:47px 6.8% 50px 4.0%
+    }
+    .welcome {
+      margin:0 0 10px
+    }
+    .welcome h1 {
+      font-weight:400;
+      font-size:40px;
+      line-height:1.12;
+      margin:0 0 0 0;
+      letter-spacing:.2px
+    }
+    .welcome-person {
+      display:flex;
+      align-items:center;
+      gap:8px;
+      margin-top:0;
+      font-size:24px;
+      line-height:1.2
+    }
+    .welcome-person .avatar {
+      width:47px;
+      height:47px;
+      flex-basis:47px
+    }
+    .welcome-person span {
+      color:var(--peach)
+    }
+    .stats {
+      display:grid;
+      grid-template-columns:repeat(4,minmax(0,1fr));
+      gap:14px;
+      margin:0 0 12px 9px
+    }
+    .stat {
+      height:126px;
+      min-width:0;
+      border-radius:11px;
+      background:var(--peach);
+      color:white;
+      padding:9px 10px;
+      overflow:hidden
+    }
+    .stat h2 {
+      font-size:23px;
+      font-weight:400;
+      line-height:1.15;
+      margin:0 0 3px;
+      white-space:nowrap
+    }
+    .stat p {
+      font-size:39px;
+      font-weight:400;
+      line-height:1.05;
+      letter-spacing:-1.3px;
+      margin:0;
+      white-space:nowrap
+    }
+    .dashboard {
+      display:grid;
+      grid-template-columns:repeat(2,minmax(0,1fr));
+      gap:13px;
+      margin-left:9px;
+      align-items:stretch
+    }
+    .panel {
+      min-width:0;
+      background:var(--peach);
+      color:var(--ink);
+      border-radius:11px;
+      padding:12px 25px 0
+    }
+    .links-panel {
+      height:440px
+    }
+    .panel {
+      display:flex;
+      flex-direction:column;
+      padding-bottom:10px
+    }
+    .panel .table-wrap {
+      flex:1 1 auto;
+      min-height:0;
+      overflow:auto
+    }
+    .data-table thead th {
+      position:sticky;
+      top:0;
+      background:var(--peach)
+    }
+    .empty {
+      text-align:center;
+      padding:18px 8px !important;
+      border-right:0 !important
+    }
+    .avatar[hidden] {
+      display:none
+    }
+    .logout-form,#logoutForm {
+      margin:0
+    }
+    .right-stack {
+      display:grid;
+      grid-template-rows:214px 214px;
+      gap:12px;
+      min-width:0
+    }
+    .small-panel {
+      height:214px;
+      padding:12px 25px 0
+    }
+    .panel-head {
+      height:45px;
+      border-radius:10px;
+      background:var(--bg);
+      color:white;
+      display:flex;
+      align-items:center;
+      gap:15px;
+      padding:0 10px;
+      margin:0 0 5px;
+      font-size:20px;
+      font-weight:400;
+      white-space:nowrap;
+      overflow:hidden
+    }
+    .panel-head i {
+      font-size:39px;
+      color:var(--peach);
+      width:35px;
+      flex:0 0 35px;
+      text-align:center
+    }
+    .panel-head span {
+      overflow:hidden;
+      text-overflow:ellipsis
+    }
+    .search-head {
+      cursor:text
+    }
+    .search-head input {
+      width:100%;
+      min-width:0;
+      background:transparent;
+      color:white;
+      border:0;
+      outline:0;
+      font-size:20px;
+      padding:0
+    }
+    .search-head input::placeholder {
+      color:white;
+      opacity:1
+    }
+    .table-wrap {
+      width:100%;
+      overflow:auto
+    }
+    .data-table {
+      width:100%;
+      border-collapse:collapse;
+      table-layout:fixed;
+      color:var(--ink);
+      font-size:11px;
+      text-align:left
+    }
+    .data-table th {
+      font-size:14px;
+      font-weight:400;
+      text-align:center;
+      padding:0 4px 3px;
+      border-bottom:1px solid var(--ink);
+      white-space:nowrap
+    }
+    .data-table td {
+      font-size:11px;
+      vertical-align:top;
+      padding:7px 5px;
+      border-right:1px solid var(--ink);
+      overflow-wrap:anywhere
+    }
+    .data-table td:last-child,.data-table th:last-child {
+      border-right:0
+    }
+    .links-table th:nth-child(1) {
+      width:29%
+    }
+    .links-table th:nth-child(2) {
+      width:39%
+    }
+    .links-table th:nth-child(3) {
+      width:32%
+    }
+    .logs-table th,.domain-table th {
+      font-size:11px;
+      padding:0 3px 3px
+    }
+    .logs-table td,.domain-table td {
+      font-size:10px
+    }
+    .logs-table th:first-child {
+      width:20%
+    }
+    .logs-table th:nth-child(2) {
+      width:27%
+    }
+    .logs-table th:nth-child(3) {
+      width:26%
+    }
+    .logs-table th:nth-child(4) {
+      width:27%
+    }
+    .domain-table th:first-child {
+      width:50%
+    }
+    .domain-table th:last-child {
+      width:50%
+    }
+    .domain-table td {
+      padding-top:5px
+    }
+    .domain-table td:first-child {
+      text-align:center;
+      font-size:13px
+    }
+    .domain-table td:last-child {
+      text-align:center;
+      font-size:8px
+    }
+    .toast {
+      position:fixed;
+      right:18px;
+      bottom:18px;
+      background:#302019;
+      color:var(--cream);
+      padding:12px 16px;
+      border-radius:9px;
+      opacity:0;
+      transform:translateY(8px);
+      transition:.2s;
+      pointer-events:none;
+      z-index:5
+    }
+    .toast.show {
+      opacity:1;
+      transform:none
+    }
+    @media(max-width:1050px) {
+      :root {
+        --sidebar:220px
+      }
+      main {
+        padding-left:28px;
+        padding-right:28px
+      }
+      .brand {
+        font-size:33px
+      }
+      .stats {
+        grid-template-columns:repeat(2,minmax(0,1fr))
+      }
+      .dashboard {
+        grid-template-columns:1fr
+      }
+      .links-panel {
+        height:350px
+      }
+      .right-stack {
+        grid-template-rows:214px 214px
+      }
+
+    }
+    @media(max-width:700px) {
+      .app {
+        display:block
+      }
+      .sidebar {
+        height:auto;
+        min-height:0;
+        position:relative;
+        padding:8px 12px 12px
+      }
+      .brand {
+        font-size:30px;
+        margin-bottom:10px
+      }
+      .nav {
+        flex-direction:row;
+        overflow-x:auto;
+        gap:7px;
+        padding-bottom:3px
+      }
+      .nav a {
+        height:40px;
+        flex:0 0 auto;
+        padding:0 10px;
+        font-size:13px
+      }
+      .nav i,.nav a:nth-child(n) i {
+        font-size:22px;
+        width:22px;
+        flex-basis:22px
+      }
+      .side-bottom {
+        display:none
+      }
+      main {
+        padding:25px 15px
+      }
+      .welcome h1 {
+        font-size:34px
+      }
+      .welcome-person {
+        font-size:20px
+      }
+      .stats,.dashboard {
+        margin-left:0
+      }
+      .stats {
+        gap:9px
+      }
+      .stat {
+        height:105px;
+        padding:9px
+      }
+      .stat h2 {
+        font-size:17px
+      }
+      .stat p {
+        font-size:28px
+      }
+      .dashboard {
+        gap:12px
+      }
+      .panel {
+        padding-left:12px;
+        padding-right:12px
+      }
+      .panel-head {
+        font-size:17px
+      }
+      .panel-head i {
+        font-size:30px
+      }
+
+    }
+    @media(max-width:390px) {
+      .stats {
+        grid-template-columns:repeat(2,minmax(0,1fr))
+      }
+      .stat p {
+        font-size:25px
+      }
+      .panel-head {
+        font-size:15px
+      }
+      .data-table th {
+        font-size:11px
+      }
+
+    }
+    @media(prefers-reduced-motion:reduce) {
+      * {
+        transition:none!important;
+        scroll-behavior:auto!important
+      }
+
+    }
+</style>
+  </head>
+  <body><a class="skip" href="#main">Skip to content</a>
+    <div class="app">
+      <aside class="sidebar" aria-label="Main navigation">
+        <div class="brand">Privo Cloud</div>
+        <nav class="nav">
+          <a href="dashboard.html" aria-current="page"><i class="fa-solid fa-house" aria-hidden="true"></i>Home</a>
+          <a href="create.html"><i class="fa-solid fa-plus" aria-hidden="true"></i>Create</a>
+          <a href="links.html"><i class="fa-solid fa-list-ul" aria-hidden="true"></i>Links List</a>
+          <a href="bulk.html"><i class="fa-solid fa-box-archive" aria-hidden="true"></i>Bulk Tools</a>
+          <a href="domains.html"><i class="fa-solid fa-globe" aria-hidden="true"></i>Custom Domains</a>
+          <a href="teams.html"><i class="fa-solid fa-building" aria-hidden="true"></i>Team Management</a>
+          <a href="logs.html"><i class="fa-solid fa-scroll" aria-hidden="true"></i>Logs</a>
+        </nav>
+        <div class="side-bottom"><form method="post" action="https://api.privo.fyi/cloud/auth/logout" id="logoutForm"><button class="logout" type="submit"><i class="fa-solid fa-right-from-bracket" aria-hidden="true"></i>Log Out</button></form>
+          <div class="user-card"><img class="avatar" src="" alt="" referrerpolicy="no-referrer" hidden data-avatar><span class="name" data-name></span>
+          </div>
+        </div>
+      </aside>
+      <main id="main">
+        <header class="welcome">
+          <h1>Welcome Back,</h1>
+          <div class="welcome-person"><img class="avatar" src="" alt="" referrerpolicy="no-referrer" hidden data-avatar><span data-name></span>
+          </div>
+        </header>
+        <section class="stats" aria-label="Account usage">
+          <article class="stat">
+            <h2>Links</h2>
+            <p id="statLinks">–</p>
+          </article>
+          <article class="stat">
+            <h2>Blob Storage</h2>
+            <p id="statR2">–</p>
+          </article>
+          <article class="stat">
+            <h2>Custom Domains</h2>
+            <p id="statDomains">–</p>
+          </article>
+          <article class="stat">
+            <h2>Database Usage</h2>
+            <p id="statD1">–</p>
+          </article>
+        </section>
+        <section class="dashboard" aria-label="Dashboard overview">
+          <article class="panel links-panel" id="links">
+            <h2 class="panel-head search-head"><i class="fa-solid fa-list-ul" aria-hidden="true"></i><input id="linkSearch" type="search" placeholder="Search Account Wide Links" aria-label="Search account wide links"></h2>
+            <div class="table-wrap">
+              <table class="data-table links-table">
+                <thead>
+                  <tr>
+                    <th>Short Link</th>
+                    <th>Redirect Url</th>
+                    <th>Last Modified</th>
+                  </tr>
+                </thead>
+                <tbody id="linkRows"></tbody>
+              </table>
+            </div>
+          </article>
+          <div class="right-stack">
+            <article class="panel small-panel" id="logs">
+              <h2 class="panel-head search-head"><i class="fa-solid fa-scroll" aria-hidden="true"></i><input type="search" id="logSearch" placeholder="Search Account Wide audit logs" aria-label="Search account wide audit logs"></h2>
+              <div class="table-wrap">
+                <table class="data-table logs-table">
+                  <thead>
+                    <tr>
+                      <th>Action</th>
+                      <th>Risk Level</th>
+                      <th>User</th>
+                      <th>Timestamp</th>
+                    </tr>
+                  </thead>
+                  <tbody id="logRows"></tbody>
+                </table>
+              </div>
+            </article>
+            <article class="panel small-panel" id="domains">
+              <h2 class="panel-head"><i class="fa-solid fa-globe" aria-hidden="true"></i><span>Search &amp; Edit Custom Domains</span>
+              </h2>
+              <div class="table-wrap">
+                <table class="data-table domain-table">
+                  <thead>
+                    <tr>
+                      <th>Domain Name</th>
+                      <th>Last Modified</th>
+                    </tr>
+                  </thead>
+                  <tbody id="domainRows"></tbody>
+                </table>
+              </div>
+            </article>
+          </div>
+        </section>
+      </main>
+    </div>
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+    <script>
+    "use strict";
+
+    (() => {
+      // The Worker lives on api.privo.fyi; the session cookie is sent with credentials.
+      const API = "https://api.privo.fyi";
+
+      const $ = (id) => document.getElementById(id);
+      const toast = $("toast");
+      let toastTimer;
+
+      function showToast(message) {
+        toast.textContent = message;
+        toast.classList.add("show");
+        clearTimeout(toastTimer);
+        toastTimer = setTimeout(() => toast.classList.remove("show"), 3500);
+      }
+
+      $("logoutForm").action = API + "/cloud/auth/logout";
+
+      /* ---------- formatting ---------- */
+
+      function formatBytes(n) {
+        const units = ["B", "KB", "MB", "GB"];
+        let v = Number(n) || 0;
+        let i = 0;
+        while (v >= 1024 && i < units.length - 1) { v /= 1024; i++; }
+        return (v >= 10 || i === 0 ? Math.round(v) : Math.round(v * 10) / 10) + units[i];
+      }
+
+      // The database stores UTC as "YYYY-MM-DD HH:MM:SS"; show it in the viewer's time zone.
+      function formatTime(utc) {
+        const d = new Date(String(utc).replace(" ", "T") + "Z");
+        if (isNaN(d)) return "";
+        const parts = new Intl.DateTimeFormat("en-US", {
+          month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit", second: "2-digit",
+          hourCycle: "h23", timeZoneName: "short"
+        }).formatToParts(d);
+        const get = (t) => (parts.find((p) => p.type === t) || {}).value || "";
+        return `${get("month")}/${get("day")} @ ${get("hour")}:${get("minute")}:${get("second")} ${get("timeZoneName")}`;
+      }
+
+      function modified(at, by) {
+        return formatTime(at) + (by ? " by " + by : "");
+      }
+
+      function shorten(text, max) {
+        const t = String(text || "").replace(/^https?:\/\//, "");
+        return t.length > max ? t.slice(0, max - 1) + "…" : t;
+      }
+
+      function describe(log) {
+        switch (log.category) {
+          case "signin":
+            return "Signed in" + (log.method ? " with " + log.method.charAt(0).toUpperCase() + log.method.slice(1) : "");
+          case "link":
+            return { create: "Created", update: "Edited", delete: "Deleted" }[log.action] + " link " + shorten(log.shortLink, 40);
+          case "r2":
+            return (log.action === "upload" ? "Uploaded file " : "Deleted file ") + shorten(log.r2Key, 36);
+          case "d1":
+            return { insert: "Added", update: "Changed", delete: "Removed" }[log.action] + " " + (log.table || "record");
+          default:
+            return log.action;
+        }
+      }
+
+      /* ---------- rendering (textContent only, so nothing in the data can inject markup) ---------- */
+
+      function fillRows(body, rows, columns, emptyText) {
+        body.textContent = "";
+
+        if (!rows.length) {
+          const tr = document.createElement("tr");
+          const td = document.createElement("td");
+          td.className = "empty";
+          td.colSpan = columns;
+          td.textContent = emptyText;
+          tr.append(td);
+          body.append(tr);
+          return;
+        }
+
+        for (const cells of rows) {
+          const tr = document.createElement("tr");
+          for (const cell of cells) {
+            const td = document.createElement("td");
+            td.textContent = cell.text;
+            if (cell.title) td.title = cell.title;
+            tr.append(td);
+          }
+          body.append(tr);
+        }
+      }
+
+      function render(data) {
+        const name = data.user.name || data.user.email;
+
+        for (const el of document.querySelectorAll("[data-name]")) el.textContent = name;
+
+        if (data.user.picture) {
+          for (const img of document.querySelectorAll("[data-avatar]")) {
+            img.src = data.user.picture;
+            img.hidden = false;
+          }
+        }
+
+        const u = data.usage;
+        $("statLinks").textContent = u.links.toLocaleString() + " / ∞";
+        $("statR2").textContent = formatBytes(u.r2Bytes) + "/" + formatBytes(u.maxR2Bytes);
+        $("statDomains").textContent = u.domains + "/" + u.maxDomains;
+        $("statD1").textContent = formatBytes(u.d1Bytes) + "/" + formatBytes(u.maxD1Bytes);
+
+        fillRows(
+          $("linkRows"),
+          data.links.map((l) => [
+            { text: l.shortLink },
+            { text: shorten(l.url, 60), title: l.url },
+            { text: modified(l.modifiedAt, l.modifiedBy) }
+          ]),
+          3,
+          "No links yet."
+        );
+
+        fillRows(
+          $("logRows"),
+          data.logs.map((l) => [
+            { text: describe(l) },
+            { text: l.risk },
+            { text: name },
+            { text: formatTime(l.at) }
+          ]),
+          4,
+          "Nothing logged yet."
+        );
+
+        fillRows(
+          $("domainRows"),
+          data.domains.map((d) => [
+            { text: d.hostname + (d.verified ? "" : " (unverified)") },
+            { text: modified(d.modifiedAt, d.modifiedBy) }
+          ]),
+          2,
+          "No custom domains yet."
+        );
+      }
+
+      /* ---------- search ---------- */
+
+      function filterRows(inputId, bodyId) {
+        $(inputId).addEventListener("input", (e) => {
+          const q = e.target.value.toLowerCase();
+          for (const row of $(bodyId).querySelectorAll("tr")) {
+            row.hidden = !row.textContent.toLowerCase().includes(q);
+          }
+        });
+      }
+
+      filterRows("linkSearch", "linkRows");
+      filterRows("logSearch", "logRows");
+
+      /* ---------- load ---------- */
+
+      fetch(API + "/api/cloud/dashboard", { credentials: "include", cache: "no-store" })
+        .then((res) => {
+          if (res.status === 401) {
+            window.location.replace("/cloud/signin");
+            return null;
+          }
+          if (!res.ok) throw new Error("HTTP " + res.status);
+          return res.json();
+        })
+        .then((data) => { if (data) render(data); })
+        .catch(() => showToast("Couldn’t load your dashboard. Try refreshing."));
+    })();
+    </script>
+  </body>
+</html>
