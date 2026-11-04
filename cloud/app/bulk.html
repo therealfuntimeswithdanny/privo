@@ -165,7 +165,7 @@
             <form id="bulkForm">
               <label class="label" id="bulkLabel" for="bulkInput">URLs to shorten</label>
               <textarea class="bulk-input" id="bulkInput" spellcheck="false" placeholder="https://example.com/first&#10;https://example.com/second&#9;mycode" required aria-describedby="bulkHint"></textarea>
-              <p class="hint" id="bulkHint">Enter one URL per line. Optionally add a custom ending after a tab: URL, then a tab, then 4–20 letters or numbers. Each line is submitted separately; valid links may be created even if another line fails.</p>
+              <p class="hint" id="bulkHint">Enter one URL per line. Optionally add a custom ending after a tab: URL, then a tab, then 4–45 letters or numbers. Each line is submitted separately; valid links may be created even if another line fails.</p>
               <button class="submit" id="submit" type="submit">Create links</button>
             </form>
           </section>
@@ -226,8 +226,8 @@
           }
 
           const shortcode = fields[1] || "";
-          if (shortcode && !/^[a-zA-Z0-9]{4,20}$/.test(shortcode)) {
-            errors.push("Line " + (index + 1) + ": custom endings must be 4–20 letters or numbers.");
+          if (shortcode && !/^[a-zA-Z0-9]{4,45}$/.test(shortcode)) {
+            errors.push("Line " + (index + 1) + ": custom endings must be 4–45 letters or numbers.");
             return;
           }
           if (shortcode && seenShortcodes.has(shortcode)) {

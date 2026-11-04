@@ -28,6 +28,90 @@
       margin-left:9px;
       padding-bottom:14px
     }
+    .edit-panel {
+      margin:0 0 18px 9px
+    }
+    .edit-panel[hidden] {
+      display:none
+    }
+    .edit-form {
+      display:grid;
+      grid-template-columns:repeat(2,minmax(0,1fr));
+      gap:14px
+    }
+    .edit-form label {
+      display:grid;
+      gap:6px;
+      font-size:14px;
+      font-weight:600
+    }
+    .edit-form input,.edit-form textarea {
+      display:block;
+      width:100%;
+      min-height:40px;
+      border:0;
+      border-radius:9px;
+      outline:0;
+      background:var(--bg);
+      color:white;
+      padding:9px 11px;
+      font:inherit;
+      font-weight:400
+    }
+    .edit-form textarea {
+      min-height:86px;
+      resize:vertical
+    }
+    .edit-form input:focus,.edit-form textarea:focus {
+      box-shadow:0 0 0 3px var(--cream)
+    }
+    .edit-form .wide {
+      grid-column:1 / -1
+    }
+    .edit-form .image-upload {
+      display:flex;
+      align-items:center;
+      flex-wrap:wrap;
+      gap:9px
+    }
+    .edit-form .image-upload input[type=file] {
+      flex:1 1 220px;
+      min-width:0;
+      color:var(--ink);
+      font-size:13px
+    }
+    .edit-form .image-upload input[type=file]::file-selector-button,
+    .edit-form .image-upload button,
+    .edit-form .form-actions button {
+      min-height:38px;
+      padding:0 13px;
+      border:0;
+      border-radius:8px;
+      background:var(--bg);
+      color:white;
+      font:inherit;
+      cursor:pointer
+    }
+    .edit-form .form-actions {
+      display:flex;
+      gap:10px;
+      grid-column:1 / -1
+    }
+    .edit-form .form-actions button[type=submit] {
+      background:#302019
+    }
+    .edit-form button:disabled {
+      opacity:.6;
+      cursor:progress
+    }
+    .edit-status,.edit-error {
+      grid-column:1 / -1;
+      margin:0;
+      font-size:13px
+    }
+    .edit-error {
+      color:#5a1d12
+    }
     .links-panel .table-wrap {
       flex:0 0 auto;
       overflow:visible
@@ -40,16 +124,19 @@
       padding:10px 8px
     }
     .links-panel .data-table th:first-child {
-      width:22%
+      width:20%
     }
     .links-panel .data-table th:nth-child(2) {
-      width:40%
+      width:34%
     }
     .links-panel .data-table th:nth-child(3) {
-      width:26%
+      width:22%
+    }
+    .links-panel .data-table th:nth-child(4) {
+      width:14%
     }
     .links-panel .data-table th:last-child {
-      width:12%
+      width:10%
     }
     .links-panel a {
       color:var(--ink);
@@ -60,6 +147,21 @@
     }
     .links-panel .destination {
       text-decoration:none
+    }
+    .edit-link {
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      min-height:32px;
+      padding:0 11px;
+      border-radius:8px;
+      background:var(--bg);
+      color:white !important;
+      text-decoration:none;
+      font-weight:600
+    }
+    .edit-link:hover {
+      background:#302019
     }
     .count {
       margin:12px 0 0;
@@ -76,6 +178,15 @@
       }
       .page-intro,.links-panel {
         margin-left:0
+      }
+      .edit-panel {
+        margin-left:0
+      }
+      .edit-form {
+        grid-template-columns:minmax(0,1fr)
+      }
+      .edit-form .wide,.edit-form .form-actions,.edit-status,.edit-error {
+        grid-column:1
       }
       .links-panel .table-wrap {
         overflow:auto
@@ -108,6 +219,36 @@
       <main id="main">
         <h1 class="page-title">Links List</h1>
         <p class="page-intro">Search the links on your account and open a short link or its destination.</p>
+        <section class="panel edit-panel" id="editPanel" aria-labelledby="editHeading" hidden>
+          <h2 class="panel-head" id="editHeading"><i class="fa-solid fa-pen-to-square" aria-hidden="true"></i>Edit link</h2>
+          <form class="edit-form" id="editForm">
+            <label class="wide" for="editDestination">Destination URL
+              <input id="editDestination" type="url" maxlength="2048" required autocomplete="url">
+            </label>
+            <label for="editTitle">SEO title
+              <input id="editTitle" maxlength="200" autocomplete="off">
+            </label>
+            <label for="editSiteName">Site or brand name
+              <input id="editSiteName" maxlength="100" autocomplete="off">
+            </label>
+            <label class="wide" for="editDescription">SEO description
+              <textarea id="editDescription" maxlength="1000"></textarea>
+            </label>
+            <label class="wide" for="editImage">Social preview image URL
+              <input id="editImage" type="url" maxlength="2048" autocomplete="url">
+            </label>
+            <div class="image-upload wide">
+              <input id="editImageFile" type="file" accept="image/png,image/jpeg,image/gif,image/webp,image/avif" aria-label="Choose a preview image">
+              <button id="uploadEditImage" type="button">Upload image to R2</button>
+            </div>
+            <p class="edit-status" id="editImageStatus" aria-live="polite"></p>
+            <p class="edit-error" id="editError" role="alert" hidden></p>
+            <div class="form-actions">
+              <button type="submit" id="saveEdit">Save changes</button>
+              <button type="button" id="cancelEdit">Cancel</button>
+            </div>
+          </form>
+        </section>
         <section class="panel links-panel" aria-label="Your links">
           <h2 class="panel-head search-head"><i class="fa-solid fa-list-ul" aria-hidden="true"></i><input id="linkSearch" type="search" placeholder="Search your links" aria-label="Search your links"></h2>
           <div class="table-wrap">
@@ -118,9 +259,10 @@
                   <th scope="col">Destination</th>
                   <th scope="col">Last Modified</th>
                   <th scope="col">Modified By</th>
+                  <th scope="col">Actions</th>
                 </tr>
               </thead>
-              <tbody id="linkRows"><tr><td class="empty" colspan="4">Loading links…</td></tr></tbody>
+              <tbody id="linkRows"><tr><td class="empty" colspan="5">Loading links…</td></tr></tbody>
             </table>
           </div>
           <p class="count" id="count" aria-live="polite"></p>
@@ -133,6 +275,7 @@
     (() => {
       const { API, $, showToast, formatTime, shorten } = Privo;
       const body = $("linkRows");
+      const editPanel = $("editPanel");
 
       Privo.loadMe();
 
@@ -163,7 +306,7 @@
           const row = document.createElement("tr");
           const cell = document.createElement("td");
           cell.className = "empty";
-          cell.colSpan = 4;
+          cell.colSpan = 5;
           cell.textContent = "No links yet. Create your first link to see it here.";
           row.append(cell);
           body.append(row);
@@ -203,7 +346,89 @@
           const by = document.createElement("td");
           by.textContent = item.modifiedBy || "";
           row.append(by);
+          const actions = document.createElement("td");
+          const edit = document.createElement("a");
+          edit.className = "edit-link";
+          edit.href = "links.html?edit=" + encodeURIComponent(item.shortLink || "");
+          edit.textContent = "Edit";
+          edit.setAttribute("aria-label", "Edit " + (item.shortLink || "link"));
+          actions.append(edit);
+          row.append(actions);
           body.append(row);
+        }
+      }
+
+      async function loadLinks() {
+        const res = await fetch(API + "/api/cloud/dashboard", { credentials: "include", cache: "no-store" });
+        if (res.status === 401) {
+          window.location.replace("/cloud/signin");
+          return;
+        }
+        if (!res.ok) throw new Error("HTTP " + res.status);
+        const data = await res.json();
+        fillLinks(data.links || []);
+        const total = (data.links || []).length;
+        $("count").textContent = total === 200
+          ? "Showing the 200 most recently modified links."
+          : total + " link" + (total === 1 ? "" : "s");
+      }
+
+      function linkFromValue(value) {
+        try {
+          const url = new URL(/^[a-z][a-z0-9+.-]*:\/\//i.test(value) ? value : "https://" + value);
+          const match = url.pathname.match(/^\/([a-zA-Z0-9]{4,45})$/);
+          return url.protocol === "https:" && !url.port &&
+            !url.username && !url.password && !url.search && !url.hash && match
+            ? { domain: url.hostname.toLowerCase(), shortcode: match[1] }
+            : null;
+        } catch (_) {
+          return null;
+        }
+      }
+
+      function editApiUrl(link) {
+        return API + "/api/cloud/link/" + encodeURIComponent(link.shortcode) +
+          "?domain=" + encodeURIComponent(link.domain);
+      }
+
+      function showEditError(message) {
+        $("editError").textContent = message;
+        $("editError").hidden = false;
+      }
+
+      function clearEdit() {
+        editPanel.hidden = true;
+        $("editError").hidden = true;
+        history.replaceState(null, "", "links.html");
+      }
+
+      async function openEditor(value) {
+        const link = linkFromValue(value);
+        editPanel.hidden = false;
+        editPanel.scrollIntoView({ behavior: "smooth", block: "start" });
+        if (!link) {
+          showEditError("That short link isn’t valid. Choose Edit from one of your links.");
+          return;
+        }
+        try {
+          const res = await fetch(editApiUrl(link), {
+            credentials: "include",
+            cache: "no-store"
+          });
+          if (res.status === 401) {
+            window.location.replace("/cloud/signin");
+            return;
+          }
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.error || "Could not load this link.");
+          $("editDestination").value = data.url || "";
+          $("editTitle").value = data.title || "";
+          $("editDescription").value = data.description || "";
+          $("editSiteName").value = data.siteName || "";
+          $("editImage").value = data.image || "";
+          $("editError").hidden = true;
+        } catch (error) {
+          showEditError(error.message || "Could not load this link.");
         }
       }
 
@@ -214,34 +439,85 @@
         }
       });
 
-      fetch(API + "/api/cloud/dashboard", { credentials: "include", cache: "no-store" })
-        .then((res) => {
-          if (res.status === 401) {
-            window.location.replace("/cloud/signin");
-            return null;
-          }
-          if (!res.ok) throw new Error("HTTP " + res.status);
-          return res.json();
-        })
-        .then((data) => {
-          if (!data) return;
-          fillLinks(data.links || []);
-          const total = (data.links || []).length;
-          $("count").textContent = total === 200
-            ? "Showing the 200 most recently modified links."
-            : total + " link" + (total === 1 ? "" : "s");
-        })
+      $("editForm").addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const link = linkFromValue(new URLSearchParams(location.search).get("edit") || "");
+        if (!link) return showEditError("That short link isn’t valid.");
+
+        const button = $("saveEdit");
+        button.disabled = true;
+        $("editError").hidden = true;
+        try {
+          const res = await fetch(editApiUrl(link), {
+            method: "PUT",
+            credentials: "include",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              url: $("editDestination").value.trim(),
+              seo: {
+                title: $("editTitle").value.trim(),
+                description: $("editDescription").value.trim(),
+                siteName: $("editSiteName").value.trim(),
+                image: $("editImage").value.trim()
+              }
+            })
+          });
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.error || "Could not update this link.");
+          showToast("Link updated and logged.");
+          clearEdit();
+          await loadLinks();
+        } catch (error) {
+          showEditError(error.message || "Could not update this link.");
+        } finally {
+          button.disabled = false;
+        }
+      });
+
+      $("cancelEdit").addEventListener("click", clearEdit);
+      $("uploadEditImage").addEventListener("click", async () => {
+        const file = $("editImageFile").files[0];
+        if (!file) {
+          $("editImageStatus").textContent = "Choose an image file first.";
+          return;
+        }
+        const button = $("uploadEditImage");
+        button.disabled = true;
+        $("editImageStatus").textContent = "Uploading image…";
+        const formData = new FormData();
+        formData.append("image", file);
+        try {
+          const res = await fetch(API + "/api/cloud/upload-image", {
+            method: "POST",
+            credentials: "include",
+            body: formData
+          });
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.error || "Could not upload the image.");
+          $("editImage").value = data.image;
+          $("editImageStatus").textContent = "Uploaded. Save changes to use this image.";
+        } catch (error) {
+          $("editImageStatus").textContent = error.message || "Could not upload the image.";
+        } finally {
+          button.disabled = false;
+        }
+      });
+
+      loadLinks()
         .catch(() => {
           body.textContent = "";
           const row = document.createElement("tr");
           const cell = document.createElement("td");
           cell.className = "empty";
-          cell.colSpan = 4;
+          cell.colSpan = 5;
           cell.textContent = "Couldn’t load your links. Try refreshing.";
           row.append(cell);
           body.append(row);
           showToast("Couldn’t load your links. Try refreshing.");
         });
+
+      const editValue = new URLSearchParams(location.search).get("edit");
+      if (editValue !== null) openEditor(editValue);
     })();
     </script>
   </body>

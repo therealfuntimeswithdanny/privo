@@ -190,7 +190,7 @@
   class="custom-code-input"
   type="text"
   minlength="4"
-  maxlength="32"
+  maxlength="45"
   autocomplete="off"
   autocapitalize="none"
   spellcheck="false"
@@ -422,11 +422,11 @@
         ) {
           if (
             shortcode.length < 4 ||
-            shortcode.length > 32 ||
+            shortcode.length > 45 ||
             !/^[A-Za-z0-9]+$/.test(shortcode)
           ) {
             showError(
-              "Custom shortcodes must contain 4–64 letters or numbers only."
+              "Custom shortcodes must contain 4–45 letters or numbers only."
             );
 
             shortcodeInput.focus();

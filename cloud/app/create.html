@@ -320,8 +320,8 @@
               <div class="panel-head field"><i class="fa-solid fa-link" aria-hidden="true"></i><input id="destination" name="url" type="text" inputmode="url" autocomplete="off" spellcheck="false" placeholder="https://example.com/long/page" required></div>
 
               <label class="label" for="shortcode">Custom ending (optional)</label>
-              <div class="panel-head field"><i class="fa-solid fa-pen" aria-hidden="true"></i><span class="prefix">privo.fyi/</span><input id="shortcode" name="shortcode" type="text" autocomplete="off" spellcheck="false" maxlength="20" placeholder="promo" aria-describedby="codeHint"></div>
-              <p class="hint" id="codeHint">4–20 letters and numbers. Leave it empty and Privo picks one.</p>
+              <div class="panel-head field"><i class="fa-solid fa-pen" aria-hidden="true"></i><span class="prefix">privo.fyi/</span><input id="shortcode" name="shortcode" type="text" autocomplete="off" spellcheck="false" maxlength="45" placeholder="promo" aria-describedby="codeHint"></div>
+              <p class="hint" id="codeHint">4–45 letters and numbers. Leave it empty and Privo picks one.</p>
 
               <details class="seo-options">
                 <summary>Custom SEO &amp; social preview</summary>
@@ -417,7 +417,8 @@
 
         const p = data.preview || {};
         const img = $("previewImg");
-        const image = p.image && httpUrl(p.image);
+        const selectedImage = $("seoImage").value.trim();
+        const image = (selectedImage && httpUrl(selectedImage)) || (p.image && httpUrl(p.image));
 
         img.hidden = true;
         img.onload = () => { img.hidden = false; };
@@ -505,8 +506,8 @@
         if (!target) return showError("That doesn’t look like a web address (it must start with http:// or https://).");
 
         const shortcode = $("shortcode").value.trim();
-        if (shortcode && !/^[a-zA-Z0-9]{4,20}$/.test(shortcode)) {
-          return showError("The custom ending must be 4–20 letters and numbers.");
+        if (shortcode && !/^[a-zA-Z0-9]{4,45}$/.test(shortcode)) {
+          return showError("The custom ending must be 4–45 letters and numbers.");
         }
 
         const seo = {

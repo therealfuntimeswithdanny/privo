@@ -15,7 +15,7 @@ export default {
     const corsHeaders = {
       "Access-Control-Allow-Origin": "https://privo.fyi",
       "Access-Control-Allow-Credentials": "true",
-      "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+      "Access-Control-Allow-Methods": "GET, POST, PUT, OPTIONS",
       "Access-Control-Allow-Headers": "Content-Type",
       "Cache-Control": "no-store, no-cache, must-revalidate, private"
     };
@@ -36,6 +36,170 @@ export default {
     // Handle these FIRST before Pages pass-through
     // ==========================================
     if (pathname.startsWith("/api/")) {
+      const editLinkMatch = pathname.match(/^\/api\/cloud\/link\/([a-zA-Z0-9]{4,45})$/);
+      if (editLinkMatch && (request.method === "GET" || request.method === "PUT")) {
+        const user = await getSessionUser(request, env);
+        if (!user) {
+          return Response.json({ error: "Not signed in" }, { status: 401, headers: meHeaders });
+        }
+        if (request.method === "PUT" && request.headers.get("Origin") !== "https://privo.fyi") {
+          return Response.json({ error: "Edits must come from Privo Cloud." }, { status: 403, headers: corsHeaders });
+        }
+
+        const shortcode = editLinkMatch[1];
+        const domain = (url.searchParams.get("domain") || "privo.fyi").toLowerCase();
+        if (!/^(?=.{1,253}$)(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/.test(domain)) {
+          return Response.json({ error: "Invalid link domain." }, { status: 400, headers: corsHeaders });
+        }
+        let link;
+        try {
+          link = await env.ACCOUNTS
+            .prepare(
+              "SELECT id, url, title, description, image, site_name, image_cached, seo_custom FROM links WHERE domain = ? AND shortcode = ? AND created_by = ?"
+            )
+            .bind(domain, shortcode, user.id)
+            .first();
+        } catch (error) {
+          console.error("Link edit lookup error:", error);
+          return Response.json({ error: "Could not load this link." }, { status: 500, headers: meHeaders });
+        }
+        if (!link) {
+          return Response.json({ error: "Link not found" }, { status: 404, headers: corsHeaders });
+        }
+
+        if (request.method === "GET") {
+          return Response.json(
+            {
+              shortcode,
+              shortLink: `${domain}/${shortcode}`,
+              url: link.url,
+              title: link.title,
+              description: link.description,
+              image: link.image,
+              siteName: link.site_name
+            },
+            { status: 200, headers: meHeaders }
+          );
+        }
+
+        try {
+          let body;
+          try {
+            body = await request.json();
+          } catch (_) {
+            return Response.json({ error: "Request body must be valid JSON." }, { status: 400, headers: corsHeaders });
+          }
+          if (!body || typeof body !== "object" || Array.isArray(body)) {
+            return Response.json({ error: "Request body must be an object." }, { status: 400, headers: corsHeaders });
+          }
+          const targetUrl = typeof body.url === "string" ? body.url.trim() : "";
+          if (!targetUrl || targetUrl.length > 2048 || !isValidUrl(targetUrl)) {
+            return Response.json({ error: "Enter a valid HTTP or HTTPS destination URL." }, { status: 400, headers: corsHeaders });
+          }
+          if (!body.seo || typeof body.seo !== "object" || Array.isArray(body.seo)) {
+            return Response.json({ error: "SEO metadata must be an object." }, { status: 400, headers: corsHeaders });
+          }
+
+          const seo = { title: null, description: null, siteName: null, image: null };
+          for (const [field, maxLength] of [["title", 200], ["description", 1000], ["siteName", 100], ["image", 2048]]) {
+            const value = body.seo[field];
+            if (value !== undefined && value !== null && typeof value !== "string") {
+              return Response.json({ error: "SEO " + field + " must be text." }, { status: 400, headers: corsHeaders });
+            }
+            const normalized = typeof value === "string" ? value.trim() : "";
+            if (normalized.length > maxLength) {
+              return Response.json({ error: "SEO " + field + " is too long." }, { status: 400, headers: corsHeaders });
+            }
+            seo[field] = normalized || null;
+          }
+          if (seo.image && !isValidUrl(seo.image)) {
+            return Response.json({ error: "SEO image must be an HTTP or HTTPS URL." }, { status: 400, headers: corsHeaders });
+          }
+
+          const uploadedImageKeyValue = seo.image && uploadedImageKeyFromUrl(seo.image);
+          if (uploadedImageKeyValue) {
+            const ownedImage = await env.ACCOUNTS
+              .prepare("SELECT 1 AS owned FROM r2_files WHERE user_id = ? AND r2_key = ?")
+              .bind(user.id, uploadedImageKeyValue)
+              .first();
+            if (!ownedImage) {
+              return Response.json({ error: "That uploaded image does not belong to your account." }, { status: 403, headers: corsHeaders });
+            }
+          }
+
+          const safety = await checkSafety(env, targetUrl);
+          if (safety.status === "flagged") {
+            return Response.json(
+              { error: "This destination was flagged by Google Web Risk and can't be used.", threats: safety.threats },
+              { status: 422, headers: corsHeaders }
+            );
+          }
+
+          const fetched = await fetchPageMeta(targetUrl);
+          const meta = {
+            title: seo.title || fetched.title,
+            description: seo.description || fetched.description,
+            siteName: seo.siteName || fetched.siteName,
+            image: seo.image || fetched.image
+          };
+          const imageState = await cacheImageState(env, shortcode, meta.image);
+
+          try {
+            const results = await env.ACCOUNTS.batch([
+              env.ACCOUNTS
+                .prepare(
+                  "UPDATE links SET url = ?, title = ?, description = ?, image = ?, site_name = ?, seo_custom = ?, image_cached = ?, safety_status = ?, safety_threats = ?, safety_checked_at = ?, updated_by = ? WHERE id = ? AND created_by = ?"
+                )
+                .bind(
+                  targetUrl,
+                  meta.title,
+                  meta.description,
+                  meta.image,
+                  meta.siteName,
+                  Object.values(seo).some(Boolean) ? 1 : 0,
+                  imageState,
+                  safety.status,
+                  safety.threats ? JSON.stringify(safety.threats) : null,
+                  safety.checkedAt,
+                  user.id,
+                  link.id,
+                  user.id
+                ),
+              env.ACCOUNTS
+                .prepare("UPDATE links SET meta_fetched_at = datetime('now') WHERE id = ? AND created_by = ?")
+                .bind(link.id, user.id)
+            ]);
+            if (!results[0]?.meta?.changes) {
+              return Response.json({ error: "Link not found" }, { status: 404, headers: corsHeaders });
+            }
+          } catch (error) {
+            if (String(error && error.message).includes("LIMIT_D1")) {
+              return Response.json(
+                { error: "Your account has reached its 1 GB database limit." },
+                { status: 403, headers: corsHeaders }
+              );
+            }
+            throw error;
+          }
+
+          return Response.json(
+            {
+              shortcode,
+              shortLink: `${domain}/${shortcode}`,
+              url: targetUrl,
+              title: meta.title,
+              description: meta.description,
+              image: publicImage(shortcode, meta.image, imageState),
+              siteName: meta.siteName
+            },
+            { status: 200, headers: corsHeaders }
+          );
+        } catch (error) {
+          console.error("Link edit error:", error);
+          return Response.json({ error: "Could not update this link." }, { status: 500, headers: corsHeaders });
+        }
+      }
+
       // Upload an account-owned preview image to R2.
       if (pathname === "/api/cloud/upload-image" && request.method === "POST") {
         if (request.headers.get("Origin") !== "https://privo.fyi") {
@@ -128,9 +292,10 @@ export default {
           );
         }
 
-        const id = crypto.randomUUID();
-        const key = uploadedImageKey(id);
-        const imageUrl = `https://privo.fyi/i/u/${id}`;
+        const date = new Date().toISOString().slice(0, 10);
+        const imageName = crypto.randomUUID() + imageExtension(contentType);
+        const key = `og/${date}/${imageName}`;
+        const imageUrl = `https://privo.fyi/${key}`;
 
         try {
           await env.IMAGES.put(key, bytes, {
@@ -258,9 +423,9 @@ export default {
 
           // If custom shortcode provided, validate it
           if (shortcode) {
-            if (!/^[a-zA-Z0-9]{4,20}$/.test(shortcode)) {
+            if (!/^[a-zA-Z0-9]{4,45}$/.test(shortcode)) {
               return Response.json(
-                { error: "Shortcode must be 4-20 alphanumeric characters" },
+                { error: "Shortcode must be 4-45 alphanumeric characters" },
                 { status: 400, headers: corsHeaders }
               );
             }
@@ -511,11 +676,16 @@ export default {
       return handleAuth(request, env, url);
     }
 
+    const datedImageMatch = pathname.match(/^\/og\/\d{4}-\d{2}-\d{2}\/[a-f0-9-]{36}\.(?:png|jpg|gif|webp|avif)$/i);
+    if (hostname === "privo.fyi" && datedImageMatch && (request.method === "GET" || request.method === "HEAD")) {
+      return serveUploadedImage(env, pathname.slice(1), request.method === "HEAD");
+    }
+
     // ==========================================
     // 2. STATIC ASSETS & PAGES PASS-THROUGH
     // Root and files go to Pages
     // ==========================================
-    if (pathname === "/" || /\.[a-zA-Z0-9]+$/.test(pathname)) {
+    if (pathname === "/" || (/\.[a-zA-Z0-9]+$/.test(pathname) && !(hostname === "privo.fyi" && datedImageMatch))) {
       return fetch(request);
     }
 
@@ -558,16 +728,17 @@ export default {
     if (hostname === "privo.fyi") {
       const isRead = request.method === "GET" || request.method === "HEAD";
 
+      // Dated user-uploaded preview image: privo.fyi/og/YYYY-MM-DD/<filename>
+      // Legacy user-uploaded preview image URL.
+      const legacyUploadedImageMatch = pathname.match(/^\/i\/u\/([a-f0-9-]{36})$/i);
+      if (hostname === "privo.fyi" && legacyUploadedImageMatch && isRead) {
+        return serveUploadedImage(env, `user-preview/${legacyUploadedImageMatch[1]}`, request.method === "HEAD");
+      }
+
       // Cached preview image: privo.fyi/i/44hf4
       const imageMatch = pathname.match(/^\/i\/([a-zA-Z0-9]{4,})$/);
       if (imageMatch && isRead) {
         return serveCachedImage(env, imageMatch[1], request.method === "HEAD");
-      }
-
-      // Account-uploaded preview image: privo.fyi/i/u/<uuid>
-      const uploadedImageMatch = pathname.match(/^\/i\/u\/([a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12})$/i);
-      if (uploadedImageMatch && isRead) {
-        return serveUploadedImage(env, uploadedImageMatch[1], request.method === "HEAD");
       }
 
       // privo.fyi/44hf4 serves a tiny HTML page whose <head> mirrors the
@@ -1599,7 +1770,7 @@ async function readHead(res, contentType) {
 async function saveMeta(env, shortcode, meta, imageState) {
   await env.ACCOUNTS
     .prepare(
-      "UPDATE links SET title = CASE WHEN seo_custom = 1 THEN COALESCE(title, ?) ELSE ? END, description = CASE WHEN seo_custom = 1 THEN COALESCE(description, ?) ELSE ? END, image = CASE WHEN seo_custom = 1 THEN COALESCE(image, ?) ELSE ? END, site_name = CASE WHEN seo_custom = 1 THEN COALESCE(site_name, ?) ELSE ? END, image_cached = ?, meta_fetched_at = datetime('now') WHERE domain = 'privo.fyi' AND shortcode = ?"
+      "UPDATE links SET title = CASE WHEN seo_custom = 1 THEN COALESCE(title, ?) ELSE ? END, description = CASE WHEN seo_custom = 1 THEN COALESCE(description, ?) ELSE ? END, image = CASE WHEN seo_custom = 1 OR image LIKE 'https://privo.fyi/i/u/%' THEN COALESCE(image, ?) ELSE ? END, site_name = CASE WHEN seo_custom = 1 THEN COALESCE(site_name, ?) ELSE ? END, image_cached = ?, meta_fetched_at = datetime('now') WHERE domain = 'privo.fyi' AND shortcode = ?"
     )
     .bind(
       meta.title, meta.title,
@@ -1617,7 +1788,7 @@ async function backfill(env, shortcode, row) {
   try {
     if (!row.meta_fetched_at) {
       const fetchedMeta = await fetchPageMeta(row.url);
-      const meta = row.seo_custom
+      const meta = row.seo_custom || uploadedImageKeyFromUrl(row.image)
         ? {
             title: row.title || fetchedMeta.title,
             description: row.description || fetchedMeta.description,
@@ -1652,23 +1823,33 @@ function imageKey(shortcode) {
   return `og/${shortcode}`;
 }
 
-function uploadedImageKey(id) {
-  return `user-preview/${id}`;
+function imageExtension(contentType) {
+  return ({
+    "image/png": ".png",
+    "image/jpeg": ".jpg",
+    "image/gif": ".gif",
+    "image/webp": ".webp",
+    "image/avif": ".avif"
+  })[contentType];
 }
 
-function uploadedImageId(value) {
+function uploadedImageKeyFromUrl(value) {
   try {
     const url = new URL(value);
-    const match = url.pathname.match(/^\/i\/u\/([a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12})$/i);
-    return url.protocol === "https:" &&
-      url.hostname === "privo.fyi" &&
-      !url.port &&
-      !url.username &&
-      !url.password &&
-      !url.search &&
-      !url.hash &&
-      match
-      ? match[1]
+    if (url.protocol !== "https:" ||
+      url.hostname !== "privo.fyi" ||
+      url.port ||
+      url.username ||
+      url.password ||
+      url.search ||
+      url.hash) return null;
+
+    const dated = url.pathname.match(/^\/og\/(\d{4}-\d{2}-\d{2})\/([a-f0-9-]{36}\.(?:png|jpg|gif|webp|avif))$/i);
+    if (dated) return `og/${dated[1]}/${dated[2].toLowerCase()}`;
+
+    const legacy = url.pathname.match(/^\/i\/u\/([a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12})$/i);
+    return legacy
+      ? `user-preview/${legacy[1].toLowerCase()}`
       : null;
   } catch (_) {
     return null;
@@ -1678,17 +1859,17 @@ function uploadedImageId(value) {
 // Our own URL when a copy exists, otherwise the destination's original.
 function publicImage(shortcode, source, imageState) {
   if (!source) return null;
-  if (uploadedImageId(source)) return source;
+  if (uploadedImageKeyFromUrl(source)) return source;
   return Number(imageState) === 1 ? `https://privo.fyi/i/${shortcode}` : source;
 }
 
 // Returns the image_cached value to store: 0 (no image), 1 (cached), 2 (failed).
 async function cacheImageState(env, shortcode, imageUrl) {
   if (!imageUrl) return 0;
-  const uploadedId = uploadedImageId(imageUrl);
-  if (uploadedId) {
+  const uploadedKey = uploadedImageKeyFromUrl(imageUrl);
+  if (uploadedKey) {
     if (!env.IMAGES) return 2;
-    return (await env.IMAGES.head(uploadedImageKey(uploadedId))) ? 1 : 2;
+    return (await env.IMAGES.head(uploadedKey)) ? 1 : 2;
   }
   return (await cacheImage(env, shortcode, imageUrl)) ? 1 : 2;
 }
@@ -1835,7 +2016,7 @@ async function serveCachedImage(env, shortcode, headOnly) {
   return new Response(headOnly ? null : object.body, { status: 200, headers });
 }
 
-async function serveUploadedImage(env, id, headOnly) {
+async function serveUploadedImage(env, key, headOnly) {
   const notFound = () => new Response("Not found", {
     status: 404,
     headers: { "X-Content-Type-Options": "nosniff" }
@@ -1843,7 +2024,7 @@ async function serveUploadedImage(env, id, headOnly) {
 
   if (!env.IMAGES) return notFound();
 
-  const object = await env.IMAGES.get(uploadedImageKey(id));
+  const object = await env.IMAGES.get(key);
   if (!object) return notFound();
 
   const headers = new Headers();
