@@ -41,6 +41,21 @@
       color:var(--cream);
       flex:0 0 auto
     }
+    .domain-field {
+      display:block;
+      width:100%;
+      min-height:40px;
+      border:0;
+      border-radius:9px;
+      outline:0;
+      background:var(--bg);
+      color:white;
+      padding:8px 11px;
+      font:inherit
+    }
+    .domain-field:focus {
+      box-shadow:0 0 0 3px var(--cream)
+    }
     .field input {
       width:100%;
       min-width:0;
@@ -319,8 +334,16 @@
               <label class="label" id="formTitle" for="destination">Destination URL</label>
               <div class="panel-head field"><i class="fa-solid fa-link" aria-hidden="true"></i><input id="destination" name="url" type="text" inputmode="url" autocomplete="off" spellcheck="false" placeholder="https://example.com/long/page" required></div>
 
+              <div id="domainFieldWrap" hidden>
+                <label class="label" for="linkDomain">Short link domain</label>
+                <select class="domain-field" id="linkDomain" aria-describedby="domainHint">
+                  <option value="privo.fyi">privo.fyi</option>
+                </select>
+                <p class="hint" id="domainHint"></p>
+              </div>
+
               <label class="label" for="shortcode">Custom ending (optional)</label>
-              <div class="panel-head field"><i class="fa-solid fa-pen" aria-hidden="true"></i><span class="prefix">privo.fyi/</span><input id="shortcode" name="shortcode" type="text" autocomplete="off" spellcheck="false" maxlength="45" placeholder="promo" aria-describedby="codeHint"></div>
+              <div class="panel-head field"><i class="fa-solid fa-pen" aria-hidden="true"></i><span class="prefix" id="shortcodePrefix">privo.fyi/</span><input id="shortcode" name="shortcode" type="text" autocomplete="off" spellcheck="false" maxlength="45" placeholder="promo" aria-describedby="codeHint"></div>
               <p class="hint" id="codeHint">4–45 letters and numbers. Leave it empty and Privo picks one.</p>
 
               <details class="seo-options">
@@ -377,7 +400,6 @@
     <script>
     (() => {
       const { API, $, showToast } = Privo;
-
       const form = $("createForm");
       const submit = $("submit");
       const uploadButton = $("uploadImage");
@@ -389,6 +411,43 @@
       };
 
       Privo.loadMe();
+
+      async function loadCustomDomains() {
+        try {
+          const res = await fetch(API + "/api/cloud/domains", {
+            credentials: "include",
+            cache: "no-store"
+          });
+          if (res.status === 401) return;
+          if (!res.ok) throw new Error("HTTP " + res.status);
+          const data = await res.json();
+          const ownedDomains = Array.isArray(data.domains) ? data.domains : [];
+          const verifiedDomains = ownedDomains.filter((domain) => domain.verified && typeof domain.hostname === "string");
+          if (!verifiedDomains.length) return;
+
+          const select = $("linkDomain");
+          for (const domain of verifiedDomains) {
+            const option = document.createElement("option");
+            option.value = domain.hostname;
+            option.textContent = domain.hostname;
+            select.append(option);
+          }
+          $("domainHint").textContent = ownedDomains.some((domain) => !domain.verified)
+            ? "Only verified domains can be selected. Finish DNS setup on Custom Domains to activate pending domains."
+            : "Select one of your verified custom domains or keep privo.fyi.";
+          $("domainFieldWrap").hidden = false;
+        } catch (error) {
+          console.error("Custom domains could not be loaded:", error);
+          $("domainHint").textContent = "Couldn’t load your custom domains. You can still create a link on privo.fyi.";
+          $("domainFieldWrap").hidden = false;
+        }
+      }
+
+      $("linkDomain").addEventListener("change", () => {
+        $("shortcodePrefix").textContent = $("linkDomain").value + "/";
+      });
+
+      loadCustomDomains();
 
       function showError(message) {
         errorEl.textContent = message;
@@ -537,6 +596,8 @@
         try {
           const payload = { url: target };
           if (shortcode) payload.shortcode = shortcode;
+          const domain = $("linkDomain").value;
+          if (domain && domain !== "privo.fyi") payload.domain = domain;
           if (hasCustomSeo) payload.seo = seo;
 
           const res = await fetch(API + "/api/link", {

@@ -1,6 +1,5 @@
 export default {
-  // Cron trigger (every 12 hours): re-check existing links against Web Risk,
-  // and re-check custom domains still waiting on DNS/cert activation.
+  // Cron trigger (every 12 hours): re-check existing links against Web Risk.
   async scheduled(event, env, ctx) {
     ctx.waitUntil(recheckLinks(env));
     ctx.waitUntil(recheckDomains(env));
@@ -31,6 +30,31 @@ export default {
 
     if (request.method === "OPTIONS") {
       return new Response(null, { status: 204, headers: corsHeaders });
+    }
+
+    // ==========================================
+    // 0. CUSTOM DOMAINS (anything that isn't ours)
+    // A customer's domain (e.g. go.coffeencode.cc) sends its root to privo.fyi.
+    // Verified customer hosts can serve their own short links below.
+    // ==========================================
+    const OWN_HOSTS = new Set(["privo.fyi", "redirect.privo.fyi", "api.privo.fyi", "dns.privo.fyi", "proxy.privo.fyi"]);
+    const isCustomHostname = !OWN_HOSTS.has(hostname);
+    if (isCustomHostname) {
+      if (pathname === "/") {
+        return Response.redirect(
+          `https://privo.fyi/p/customdomain?domain=${encodeURIComponent(hostname)}`,
+          302
+        );
+      }
+      const verifiedDomain = HOSTNAME_RE.test(hostname)
+        ? await env.ACCOUNTS
+          .prepare("SELECT hostname FROM domains WHERE hostname = ? AND verified = 1")
+          .bind(hostname)
+          .first()
+        : null;
+      if (!verifiedDomain) {
+        return new Response("Not found", { status: 404, headers: { "Cache-Control": "no-store" } });
+      }
     }
 
     // ==========================================
@@ -144,7 +168,7 @@ export default {
             siteName: seo.siteName || fetched.siteName,
             image: seo.image || fetched.image
           };
-          const imageState = await cacheImageState(env, shortcode, meta.image);
+          const imageState = await cacheImageState(env, shortcode, meta.image, domain);
 
           try {
             const results = await env.ACCOUNTS.batch([
@@ -191,7 +215,7 @@ export default {
               url: targetUrl,
               title: meta.title,
               description: meta.description,
-              image: publicImage(shortcode, meta.image, imageState),
+              image: publicImage(shortcode, meta.image, imageState, domain),
               siteName: meta.siteName
             },
             { status: 200, headers: corsHeaders }
@@ -367,6 +391,28 @@ export default {
             );
           }
 
+          const requestedDomain = body.domain === undefined ? "privo.fyi" : body.domain;
+          if (typeof requestedDomain !== "string") {
+            return Response.json({ error: "Invalid link domain." }, { status: 400, headers: corsHeaders });
+          }
+          const linkDomain = requestedDomain.trim().toLowerCase();
+          if (linkDomain !== "privo.fyi" && !HOSTNAME_RE.test(linkDomain)) {
+            return Response.json({ error: "Invalid link domain." }, { status: 400, headers: corsHeaders });
+          }
+          const owner = await getSessionUser(request, env);
+          if (linkDomain !== "privo.fyi") {
+            if (!owner) {
+              return Response.json({ error: "Sign in to use a custom domain." }, { status: 401, headers: meHeaders });
+            }
+            const ownedDomain = await env.ACCOUNTS
+              .prepare("SELECT hostname FROM domains WHERE hostname = ? AND owner_id = ? AND verified = 1")
+              .bind(linkDomain, owner.id)
+              .first();
+            if (!ownedDomain) {
+              return Response.json({ error: "Choose a verified custom domain on your account." }, { status: 403, headers: corsHeaders });
+            }
+          }
+
           const seo = body.seo;
           const customMeta = { title: null, description: null, image: null, siteName: null };
           if (seo !== undefined && (!seo || typeof seo !== "object" || Array.isArray(seo))) {
@@ -434,8 +480,8 @@ export default {
 
             // Check if already taken
             const existing = await env.ACCOUNTS
-              .prepare("SELECT shortcode FROM links WHERE domain = 'privo.fyi' AND shortcode = ?")
-              .bind(shortcode)
+              .prepare("SELECT shortcode FROM links WHERE domain = ? AND shortcode = ?")
+              .bind(linkDomain, shortcode)
               .first();
 
             if (existing) {
@@ -450,8 +496,8 @@ export default {
             while (attempts < 10) {
               shortcode = generateShortCode();
               const existing = await env.ACCOUNTS
-                .prepare("SELECT shortcode FROM links WHERE domain = 'privo.fyi' AND shortcode = ?")
-                .bind(shortcode)
+                .prepare("SELECT shortcode FROM links WHERE domain = ? AND shortcode = ?")
+                .bind(linkDomain, shortcode)
                 .first();
               if (!existing) break;
               attempts++;
@@ -465,15 +511,12 @@ export default {
             }
           }
 
-          // Signed in (cookie sent with credentials: "include") -> the link belongs
-          // to that account and counts toward its usage. Otherwise it's anonymous.
-          const owner = await getSessionUser(request, env);
-
           // Insert into database. Database triggers keep usage and the audit log.
           try {
             await env.ACCOUNTS
-              .prepare("INSERT INTO links (domain, shortcode, url, created_by, safety_status, safety_threats, safety_checked_at, title, description, image, site_name, seo_custom) VALUES ('privo.fyi', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
+              .prepare("INSERT INTO links (domain, shortcode, url, created_by, safety_status, safety_threats, safety_checked_at, title, description, image, site_name, seo_custom) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
               .bind(
+                linkDomain,
                 shortcode,
                 targetUrl,
                 owner ? owner.id : null,
@@ -516,14 +559,14 @@ export default {
               image: customMeta.image || fetchedMeta.image,
               siteName: customMeta.siteName || fetchedMeta.siteName
             };
-            const imageState = await cacheImageState(env, shortcode, meta.image);
+            const imageState = await cacheImageState(env, shortcode, meta.image, linkDomain);
 
-            await saveMeta(env, shortcode, meta, imageState);
+            await saveMeta(env, linkDomain, shortcode, meta, imageState);
 
             preview = {
               title: meta.title,
               description: meta.description,
-              image: publicImage(shortcode, meta.image, imageState),
+              image: publicImage(shortcode, meta.image, imageState, linkDomain),
               siteName: meta.siteName
             };
           } catch (metaError) {
@@ -533,7 +576,7 @@ export default {
           return Response.json(
             {
               shortcode,
-              shortUrl: `https://privo.fyi/${shortcode}`,
+              shortUrl: `https://${linkDomain}/${shortcode}`,
               originalUrl: targetUrl,
               safety: safety.status,
               preview
@@ -756,7 +799,7 @@ export default {
         const shortcode = pathname.slice(1);
         const result = await env.ACCOUNTS
           .prepare(
-            "SELECT url, title, description, image, site_name, seo_custom, meta_fetched_at, image_cached, safety_status, safety_threats FROM links WHERE domain = 'privo.fyi' AND shortcode = ?"
+            "SELECT domain, url, title, description, image, site_name, seo_custom, meta_fetched_at, image_cached, safety_status, safety_threats FROM links WHERE domain = 'privo.fyi' AND shortcode = ?"
           )
           .bind(shortcode)
           .first();
@@ -773,7 +816,7 @@ export default {
           const needsImage = result.image && !result.image_cached;
 
           if (needsMeta || needsImage) {
-            ctx.waitUntil(backfill(env, shortcode, result));
+            ctx.waitUntil(backfill(env, "privo.fyi", shortcode, result));
           }
 
           const html = renderLinkPage(shortcode, result);
@@ -795,6 +838,46 @@ export default {
       // Everything else on main domain goes to Pages
       // (this includes /p/stop, which Pages serves from p/stop.html)
       return fetch(request);
+    }
+
+    if (isCustomHostname) {
+      const isRead = request.method === "GET" || request.method === "HEAD";
+      if (isRead) {
+        const imageMatch = pathname.match(/^\/i\/([a-zA-Z0-9]{4,45})$/);
+        if (imageMatch) {
+          return serveCachedImage(env, imageMatch[1], request.method === "HEAD", hostname);
+        }
+
+        if (/^\/[a-zA-Z0-9]{4,45}$/.test(pathname)) {
+          const shortcode = pathname.slice(1);
+          const result = await env.ACCOUNTS
+            .prepare(
+              "SELECT domain, url, title, description, image, site_name, seo_custom, meta_fetched_at, image_cached, safety_status, safety_threats FROM links WHERE domain = ? AND shortcode = ?"
+            )
+            .bind(hostname, shortcode)
+            .first();
+
+          if (!result) return new Response("Not found", { status: 404 });
+          if (result.safety_status === "flagged") {
+            return renderBlockedPage(shortcode, result, request.method === "HEAD");
+          }
+
+          if (!result.meta_fetched_at || (result.image && !result.image_cached)) {
+            ctx.waitUntil(backfill(env, hostname, shortcode, result));
+          }
+
+          return new Response(request.method === "HEAD" ? null : renderLinkPage(shortcode, result), {
+            status: 200,
+            headers: {
+              "Content-Type": "text/html; charset=UTF-8",
+              "Referrer-Policy": "no-referrer",
+              "Cache-Control": "public, max-age=300"
+            }
+          });
+        }
+      }
+
+      return new Response("Not found", { status: 404 });
     }
 
     // ==========================================
@@ -1093,7 +1176,7 @@ async function recheckLinks(env) {
 
   const { results } = await env.ACCOUNTS
     .prepare(
-      "SELECT id, shortcode, url, safety_status FROM links ORDER BY safety_checked_at IS NOT NULL, safety_checked_at ASC LIMIT ?"
+      "SELECT id, domain, shortcode, url, safety_status FROM links ORDER BY safety_checked_at IS NOT NULL, safety_checked_at ASC LIMIT ?"
     )
     .bind(limit)
     .all();
@@ -1129,7 +1212,7 @@ async function recheckLinks(env) {
 
           // Stop serving the destination's preview image from our domain.
           if (env.IMAGES) {
-            await env.IMAGES.delete(imageKey(row.shortcode)).catch(() => {});
+            await env.IMAGES.delete(imageKey(row.shortcode, row.domain)).catch(() => {});
             await env.ACCOUNTS
               .prepare("UPDATE links SET image_cached = 2 WHERE id = ?")
               .bind(row.id)
@@ -1783,7 +1866,7 @@ async function addDomain(request, env, user, headers) {
 
   const hostname = normalizeHostname(body.hostname);
   if (!hostname) {
-    return Response.json({ error: "Enter a domain like links.example.com. privo.fyi can't be used." }, { status: 400, headers });
+    return Response.json({ error: "Enter a domain like links.example.com. privo.fyi can’t be used." }, { status: 400, headers });
   }
 
   const taken = await env.ACCOUNTS.prepare("SELECT id FROM domains WHERE hostname = ?").bind(hostname).first();
@@ -1798,7 +1881,7 @@ async function addDomain(request, env, user, headers) {
     console.error("Custom hostname create failed:", created.status, JSON.stringify(created.errors));
     const duplicate = created.errors.some((e) => /already|duplicate|exists/i.test(e.message || ""));
     return Response.json(
-      { error: duplicate ? "That domain is already in use." : "Couldn't add that domain right now. Try again." },
+      { error: duplicate ? "That domain is already in use." : "Couldn’t add that domain right now. Try again." },
       { status: duplicate ? 409 : 502, headers }
     );
   }
@@ -1817,7 +1900,7 @@ async function addDomain(request, env, user, headers) {
     // Couldn't save it (usually the 10-domain limit): undo the Cloudflare side.
     await cf(env, "DELETE", `/custom_hostnames/${cfId}`);
     if (String(error && error.message).includes("LIMIT_DOMAINS")) {
-      return Response.json({ error: "You've reached your limit of 10 custom domains." }, { status: 403, headers });
+      return Response.json({ error: "You’ve reached your limit of 10 custom domains." }, { status: 403, headers });
     }
     throw error;
   }
@@ -1832,7 +1915,7 @@ async function verifyDomain(env, user, id, headers) {
 
   const res = await cf(env, "GET", `/custom_hostnames/${row.cf_id}`);
   if (!res.ok || !res.result) {
-    return Response.json({ error: "Couldn't check that domain right now. Try again." }, { status: 502, headers });
+    return Response.json({ error: "Couldn’t check that domain right now. Try again." }, { status: 502, headers });
   }
 
   const state = domainState(res.result);
@@ -1854,7 +1937,7 @@ async function removeDomain(env, user, id, headers) {
   if (row.cf_id) {
     const res = await cf(env, "DELETE", `/custom_hostnames/${row.cf_id}`);
     if (!res.ok && res.status !== 404) {
-      return Response.json({ error: "Couldn't remove that domain right now. Try again." }, { status: 502, headers });
+      return Response.json({ error: "Couldn’t remove that domain right now. Try again." }, { status: 502, headers });
     }
   }
 
@@ -1929,7 +2012,7 @@ async function fetchPageMeta(targetUrl) {
     });
 
     const contentType = res.headers.get("content-type") || "";
-    if (!res.ok || !/text/html|application/xhtml/i.test(contentType) || !res.body) {
+    if (!res.ok || !/text\/html|application\/xhtml/i.test(contentType) || !res.body) {
       return empty;
     }
 
@@ -2008,24 +2091,24 @@ async function readHead(res, contentType) {
 }
 
 // image_cached: 0 = not attempted, 1 = copy stored in R2, 2 = attempted and failed.
-async function saveMeta(env, shortcode, meta, imageState) {
+async function saveMeta(env, domain, shortcode, meta, imageState) {
   await env.ACCOUNTS
     .prepare(
-      "UPDATE links SET title = CASE WHEN seo_custom = 1 THEN COALESCE(title, ?) ELSE ? END, description = CASE WHEN seo_custom = 1 THEN COALESCE(description, ?) ELSE ? END, image = CASE WHEN seo_custom = 1 OR image LIKE 'https://privo.fyi/i/u/%' THEN COALESCE(image, ?) ELSE ? END, site_name = CASE WHEN seo_custom = 1 THEN COALESCE(site_name, ?) ELSE ? END, image_cached = ?, meta_fetched_at = datetime('now') WHERE domain = 'privo.fyi' AND shortcode = ?"
+      "UPDATE links SET title = CASE WHEN seo_custom = 1 THEN COALESCE(title, ?) ELSE ? END, description = CASE WHEN seo_custom = 1 THEN COALESCE(description, ?) ELSE ? END, image = CASE WHEN seo_custom = 1 OR image LIKE 'https://privo.fyi/i/u/%' OR image LIKE 'https://privo.fyi/og/%' THEN COALESCE(image, ?) ELSE ? END, site_name = CASE WHEN seo_custom = 1 THEN COALESCE(site_name, ?) ELSE ? END, image_cached = ?, meta_fetched_at = datetime('now') WHERE domain = ? AND shortcode = ?"
     )
     .bind(
       meta.title, meta.title,
       meta.description, meta.description,
       meta.image, meta.image,
       meta.siteName, meta.siteName,
-      imageState, shortcode
+      imageState, domain, shortcode
     )
     .run();
 }
 
 // Fill in whatever a link is missing. Saved even when the result is empty or
 // failed so a dead destination isn't re-fetched on every visit.
-async function backfill(env, shortcode, row) {
+async function backfill(env, domain, shortcode, row) {
   try {
     if (!row.meta_fetched_at) {
       const fetchedMeta = await fetchPageMeta(row.url);
@@ -2037,16 +2120,16 @@ async function backfill(env, shortcode, row) {
             siteName: row.site_name || fetchedMeta.siteName
           }
         : fetchedMeta;
-      const imageState = await cacheImageState(env, shortcode, meta.image);
-      await saveMeta(env, shortcode, meta, imageState);
+      const imageState = await cacheImageState(env, shortcode, meta.image, domain);
+      await saveMeta(env, domain, shortcode, meta, imageState);
       return;
     }
 
     // Metadata exists but the image was never copied.
-    const imageState = await cacheImageState(env, shortcode, row.image);
+    const imageState = await cacheImageState(env, shortcode, row.image, domain);
     await env.ACCOUNTS
-      .prepare("UPDATE links SET image_cached = ? WHERE domain = 'privo.fyi' AND shortcode = ?")
-      .bind(imageState, shortcode)
+      .prepare("UPDATE links SET image_cached = ? WHERE domain = ? AND shortcode = ?")
+      .bind(imageState, domain, shortcode)
       .run();
   } catch (error) {
     console.error("Backfill error:", error);
@@ -2060,8 +2143,8 @@ async function backfill(env, shortcode, row) {
 const IMAGE_TIMEOUT_MS = 3000;
 const IMAGE_MAX_BYTES = 5 * 1024 * 1024; // 5 MB
 
-function imageKey(shortcode) {
-  return `og/${shortcode}`;
+function imageKey(shortcode, domain = "privo.fyi") {
+  return domain === "privo.fyi" ? `og/${shortcode}` : `og/${domain}/${shortcode}`;
 }
 
 function imageExtension(contentType) {
@@ -2098,28 +2181,28 @@ function uploadedImageKeyFromUrl(value) {
 }
 
 // Our own URL when a copy exists, otherwise the destination's original.
-function publicImage(shortcode, source, imageState) {
+function publicImage(shortcode, source, imageState, domain = "privo.fyi") {
   if (!source) return null;
   if (uploadedImageKeyFromUrl(source)) return source;
-  return Number(imageState) === 1 ? `https://privo.fyi/i/${shortcode}` : source;
+  return Number(imageState) === 1 ? `https://${domain}/i/${shortcode}` : source;
 }
 
 // Returns the image_cached value to store: 0 (no image), 1 (cached), 2 (failed).
-async function cacheImageState(env, shortcode, imageUrl) {
+async function cacheImageState(env, shortcode, imageUrl, domain = "privo.fyi") {
   if (!imageUrl) return 0;
   const uploadedKey = uploadedImageKeyFromUrl(imageUrl);
   if (uploadedKey) {
     if (!env.IMAGES) return 2;
     return (await env.IMAGES.head(uploadedKey)) ? 1 : 2;
   }
-  return (await cacheImage(env, shortcode, imageUrl)) ? 1 : 2;
+  return (await cacheImage(env, shortcode, imageUrl, domain)) ? 1 : 2;
 }
 
 // Copy a destination's preview image into R2. Returns true on success.
 // Only real raster images are kept (type is sniffed from the bytes, not
 // trusted from headers) and SVG is refused, since it can carry script and
 // would be served from privo.fyi.
-async function cacheImage(env, shortcode, imageUrl) {
+async function cacheImage(env, shortcode, imageUrl, domain = "privo.fyi") {
   if (!env.IMAGES) return false;
 
   const controller = new AbortController();
@@ -2147,7 +2230,7 @@ async function cacheImage(env, shortcode, imageUrl) {
     const contentType = sniffImageType(bytes);
     if (!contentType) return false;
 
-    await env.IMAGES.put(imageKey(shortcode), bytes, {
+    await env.IMAGES.put(imageKey(shortcode, domain), bytes, {
       httpMetadata: { contentType },
       customMetadata: { source: imageUrl.slice(0, 1000) }
     });
@@ -2236,12 +2319,12 @@ function sniffImageType(b) {
   return null;
 }
 
-async function serveCachedImage(env, shortcode, headOnly) {
+async function serveCachedImage(env, shortcode, headOnly, domain = "privo.fyi") {
   const notFound = () => new Response("Not found", { status: 404 });
 
   if (!env.IMAGES) return notFound();
 
-  const object = await env.IMAGES.get(imageKey(shortcode));
+  const object = await env.IMAGES.get(imageKey(shortcode, domain));
   if (!object) return notFound();
 
   const headers = new Headers();
@@ -2287,13 +2370,14 @@ async function serveUploadedImage(env, key, headOnly) {
 function renderLinkPage(shortcode, row) {
   const destination = new URL(row.url);
   const host = destination.hostname.replace(/^www\./, "");
-  const shortUrl = `https://privo.fyi/${shortcode}`;
+  const domain = row.domain || "privo.fyi";
+  const shortUrl = `https://${domain}/${shortcode}`;
   const stopUrl = buildStopUrl(row.url);
 
   const title = row.title || host;
   const description = row.description || `Shortened link to ${host}`;
   const siteName = row.site_name || host;
-  const image = publicImage(shortcode, row.image, row.image_cached);
+  const image = publicImage(shortcode, row.image, row.image_cached, domain);
 
   const e = escapeHtml;
 
