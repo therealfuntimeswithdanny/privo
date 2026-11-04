@@ -207,15 +207,7 @@
 
   <div class="page">
 
-    <header class="header">
-      <a href="/" class="brand" aria-label="Privo home">
-    privo.<em><i>fyi</i></em>
-      </a>
-      <nav class="nav" aria-label="Primary navigation">
-         <a href="about.html" aria-current="page">About</a>
-        <a href="mailto:abuse@privo.fyi" class="signin">Report a Link</a>
-      </nav>
-    </header>
+    <div data-site-header></div>
 
     <main id="main-content">
 
@@ -370,31 +362,11 @@
 
     </main>
 
-    <footer class="footer">
-      <div>
-        <div class="footer-brand">
-          privo.<em>fyi</em>
-        </div>
-        <p class="footer-copy">
-        <i class="fa-regular fa-copyright"></i> <span id="year"></span> <a href="p/stop.html?url=https://coffeencode.cc&viaPrivo=true">Coffee & Code</a>
-          <br>
-          Contact support via Email <a href="mailto:support@privo.fyi">support@privo.fyi</a>
-          Report Abuse via email <a href="mailto:abuse@privo.fyi">abuse@privo.fyi</a>
-        </p>
-      </div>
-      <div class="footer-links">
-        <a href="/legal/terms">Terms of Service</a>
-        <a href="/legal/privacy">Privacy Policy</a>
-      </div>
-    </footer>
-
-    <div class="footer-bottom"></div>
+    <div data-site-footer></div>
 
   </div>
 
-  <script>
-    document.getElementById('year').textContent = new Date().getFullYear();
-  </script>
+  <script src="/p/js/site-shell.js" defer></script>
 
 </body>
 </html>
