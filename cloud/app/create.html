@@ -63,6 +63,102 @@
       margin:5px 0 0;
       opacity:.8
     }
+    .seo-options {
+      margin-top:17px;
+      border-top:1px solid rgba(23,15,12,.3);
+      padding-top:11px
+    }
+    .seo-options summary {
+      cursor:pointer;
+      font-size:16px;
+      font-weight:500
+    }
+    .seo-options summary:focus-visible {
+      outline:3px solid var(--cream);
+      outline-offset:3px;
+      border-radius:3px
+    }
+    .seo-options .hint {
+      margin:7px 0 10px
+    }
+    .seo-label {
+      display:block;
+      font-size:13px;
+      margin:10px 0 5px
+    }
+    .seo-field {
+      display:block;
+      width:100%;
+      min-height:40px;
+      border:0;
+      border-radius:9px;
+      outline:0;
+      background:var(--bg);
+      color:white;
+      padding:9px 11px;
+      font-size:15px
+    }
+    textarea.seo-field {
+      min-height:86px;
+      resize:vertical
+    }
+    .seo-field::placeholder {
+      color:white;
+      opacity:.55
+    }
+    .seo-field:focus {
+      box-shadow:0 0 0 3px var(--cream)
+    }
+    .image-upload {
+      display:flex;
+      align-items:center;
+      flex-wrap:wrap;
+      gap:9px;
+      margin-top:8px
+    }
+    .image-upload input[type=file] {
+      flex:1 1 220px;
+      min-width:0;
+      color:var(--ink);
+      font-size:13px
+    }
+    .image-upload input[type=file]::file-selector-button {
+      min-height:36px;
+      margin-right:8px;
+      padding:0 12px;
+      border:0;
+      border-radius:8px;
+      background:var(--bg);
+      color:white;
+      font:inherit;
+      cursor:pointer
+    }
+    .image-upload-button {
+      min-height:36px;
+      padding:0 13px;
+      border:0;
+      border-radius:8px;
+      background:var(--bg);
+      color:white;
+      font-size:14px;
+      cursor:pointer
+    }
+    .image-upload-button:hover {
+      background:#302019
+    }
+    .image-upload-button:disabled {
+      opacity:.6;
+      cursor:progress
+    }
+    .image-upload-status {
+      flex:1 0 100%;
+      margin:0;
+      font-size:12px;
+      line-height:1.4
+    }
+    .image-upload-status[data-state=error] {
+      color:#5a1d12
+    }
     .submit,.secondary,.copy {
       border:0;
       cursor:pointer;
@@ -227,6 +323,29 @@
               <div class="panel-head field"><i class="fa-solid fa-pen" aria-hidden="true"></i><span class="prefix">privo.fyi/</span><input id="shortcode" name="shortcode" type="text" autocomplete="off" spellcheck="false" maxlength="20" placeholder="promo" aria-describedby="codeHint"></div>
               <p class="hint" id="codeHint">4–20 letters and numbers. Leave it empty and Privo picks one.</p>
 
+              <details class="seo-options">
+                <summary>Custom SEO &amp; social preview</summary>
+                <p class="hint">Optional metadata for Google search results and Open Graph/Twitter previews. Leave fields blank to use information from the destination page. Search engines may choose their own title or snippet.</p>
+
+                <label class="seo-label" for="seoTitle">SEO and social title</label>
+                <input class="seo-field" id="seoTitle" type="text" maxlength="200" autocomplete="off" placeholder="A clear title for your link">
+
+                <label class="seo-label" for="seoDescription">SEO description and social summary</label>
+                <textarea class="seo-field" id="seoDescription" maxlength="1000" placeholder="A short summary of the destination"></textarea>
+
+                <label class="seo-label" for="seoSiteName">Site or brand name</label>
+                <input class="seo-field" id="seoSiteName" type="text" maxlength="100" autocomplete="organization" placeholder="Your brand">
+
+                <label class="seo-label" for="seoImage">Social preview image URL</label>
+                <input class="seo-field" id="seoImage" type="url" maxlength="2048" inputmode="url" autocomplete="url" placeholder="https://example.com/image.jpg" aria-describedby="seoImageHint">
+                <p class="hint" id="seoImageHint">Use a publicly accessible HTTP or HTTPS image, or upload an image to your Privo R2 storage. Open Graph and supported social platforms use this image in link previews.</p>
+                <div class="image-upload">
+                  <input id="seoImageFile" type="file" accept="image/png,image/jpeg,image/gif,image/webp,image/avif" aria-label="Choose a social preview image">
+                  <button class="image-upload-button" id="uploadImage" type="button">Upload image</button>
+                  <p class="image-upload-status" id="imageUploadStatus" role="status" aria-live="polite"></p>
+                </div>
+              </details>
+
               <p class="form-error" id="formError" role="alert" hidden></p>
 
               <button class="submit" id="submit" type="submit"><i class="fa-solid fa-plus" aria-hidden="true"></i><span>Create Link</span></button>
@@ -261,6 +380,7 @@
 
       const form = $("createForm");
       const submit = $("submit");
+      const uploadButton = $("uploadImage");
       const errorEl = $("formError");
       const THREATS = {
         MALWARE: "malware",
@@ -315,6 +435,64 @@
         $("placeholder").hidden = false;
       }
 
+      uploadButton.addEventListener("click", async () => {
+        showError("");
+        const file = $("seoImageFile").files[0];
+        const status = $("imageUploadStatus");
+        status.textContent = "";
+        status.dataset.state = "";
+
+        if (!file) {
+          status.textContent = "Choose an image file first.";
+          status.dataset.state = "error";
+          return;
+        }
+        if (file.size > 5 * 1024 * 1024) {
+          status.textContent = "Preview images must be 5 MB or smaller.";
+          status.dataset.state = "error";
+          return;
+        }
+
+        const body = new FormData();
+        body.append("image", file);
+        uploadButton.disabled = true;
+        submit.disabled = true;
+        uploadButton.textContent = "Uploading…";
+        status.textContent = "Uploading image to your Privo storage…";
+
+        try {
+          const res = await fetch(API + "/api/cloud/upload-image", {
+            method: "POST",
+            credentials: "include",
+            body
+          });
+          let data = {};
+          try { data = await res.json(); } catch (_) { /* use the HTTP status below */ }
+
+          if (res.status === 401) {
+            window.location.replace("/cloud/signin");
+            return;
+          }
+          if (!res.ok) {
+            status.textContent = data.error || "Could not upload the image (HTTP " + res.status + ").";
+            status.dataset.state = "error";
+            return;
+          }
+
+          $("seoImage").value = data.image;
+          $("seoImageFile").value = "";
+          status.textContent = "Image uploaded and added as the social preview.";
+          showToast("Preview image uploaded");
+        } catch (_) {
+          status.textContent = "Couldn’t reach Privo. Check your connection and try again.";
+          status.dataset.state = "error";
+        } finally {
+          uploadButton.disabled = false;
+          submit.disabled = false;
+          uploadButton.textContent = "Upload image";
+        }
+      });
+
       form.addEventListener("submit", async (event) => {
         event.preventDefault();
         showError("");
@@ -331,15 +509,40 @@
           return showError("The custom ending must be 4–20 letters and numbers.");
         }
 
+        const seo = {
+          title: $("seoTitle").value.trim(),
+          description: $("seoDescription").value.trim(),
+          siteName: $("seoSiteName").value.trim(),
+          image: $("seoImage").value.trim()
+        };
+        if (seo.image && !httpUrl(seo.image)) {
+          return showError("The social preview image must be an HTTP or HTTPS URL.");
+        }
+        for (const [field, maxLength, label] of [
+          ["seoTitle", 200, "SEO title"],
+          ["seoDescription", 1000, "SEO description"],
+          ["seoSiteName", 100, "Site or brand name"],
+          ["seoImage", 2048, "Social preview image URL"]
+        ]) {
+          if ($(field).value.trim().length > maxLength) {
+            return showError(label + " is too long.");
+          }
+        }
+        const hasCustomSeo = Object.values(seo).some(Boolean);
+
         submit.disabled = true;
         submit.querySelector("span").textContent = "Creating…";
 
         try {
+          const payload = { url: target };
+          if (shortcode) payload.shortcode = shortcode;
+          if (hasCustomSeo) payload.seo = seo;
+
           const res = await fetch(API + "/api/link", {
             method: "POST",
             credentials: "include",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(shortcode ? { url: target, shortcode } : { url: target })
+            body: JSON.stringify(payload)
           });
 
           let data = {};

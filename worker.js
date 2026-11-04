@@ -36,6 +36,157 @@ export default {
     // Handle these FIRST before Pages pass-through
     // ==========================================
     if (pathname.startsWith("/api/")) {
+      // Upload an account-owned preview image to R2.
+      if (pathname === "/api/cloud/upload-image" && request.method === "POST") {
+        if (request.headers.get("Origin") !== "https://privo.fyi") {
+          return Response.json(
+            { error: "Uploads must come from Privo Cloud." },
+            { status: 403, headers: corsHeaders }
+          );
+        }
+
+        const user = await getSessionUser(request, env);
+        if (!user) {
+          return Response.json({ error: "Not signed in" }, { status: 401, headers: meHeaders });
+        }
+        if (!env.IMAGES) {
+          return Response.json(
+            { error: "Image storage is unavailable right now." },
+            { status: 503, headers: corsHeaders }
+          );
+        }
+
+        const requestContentType = request.headers.get("Content-Type") || "";
+        if (!/^multipart\/form-data\s*;/i.test(requestContentType)) {
+          return Response.json(
+            { error: "Choose an image file to upload." },
+            { status: 400, headers: corsHeaders }
+          );
+        }
+
+        const contentLength = Number(request.headers.get("Content-Length"));
+        if (contentLength && contentLength > IMAGE_MAX_BYTES + 65536) {
+          return Response.json(
+            { error: "Preview images must be 5 MB or smaller." },
+            { status: 413, headers: corsHeaders }
+          );
+        }
+
+        let form;
+        try {
+          const body = await readLimitedRequestBody(request, IMAGE_MAX_BYTES + 65536);
+          if (!body) {
+            return Response.json(
+              { error: "Preview images must be 5 MB or smaller." },
+              { status: 413, headers: corsHeaders }
+            );
+          }
+          const formRequest = new Request(request.url, {
+            method: "POST",
+            headers: { "Content-Type": requestContentType },
+            body
+          });
+          form = await formRequest.formData();
+        } catch (error) {
+          console.error("Preview image form error:", error);
+          return Response.json(
+            { error: "Choose an image file to upload." },
+            { status: 400, headers: corsHeaders }
+          );
+        }
+
+        const file = form.get("image");
+        if (!(file instanceof File) || !file.size) {
+          return Response.json(
+            { error: "Choose an image file to upload." },
+            { status: 400, headers: corsHeaders }
+          );
+        }
+        if (file.size > IMAGE_MAX_BYTES) {
+          return Response.json(
+            { error: "Preview images must be 5 MB or smaller." },
+            { status: 413, headers: corsHeaders }
+          );
+        }
+
+        let bytes;
+        try {
+          bytes = new Uint8Array(await file.arrayBuffer());
+        } catch (error) {
+          console.error("Preview image read error:", error);
+          return Response.json(
+            { error: "Could not read the selected image." },
+            { status: 400, headers: corsHeaders }
+          );
+        }
+
+        const contentType = sniffImageType(bytes);
+        if (!contentType) {
+          return Response.json(
+            { error: "Use a PNG, JPEG, GIF, WebP, or AVIF image." },
+            { status: 415, headers: corsHeaders }
+          );
+        }
+
+        const id = crypto.randomUUID();
+        const key = uploadedImageKey(id);
+        const imageUrl = `https://privo.fyi/i/u/${id}`;
+
+        try {
+          await env.IMAGES.put(key, bytes, {
+            httpMetadata: { contentType },
+            customMetadata: { owner: user.id, kind: "custom-preview" }
+          });
+        } catch (error) {
+          console.error("Preview image upload error:", error);
+          return Response.json(
+            { error: "Could not upload the image. Try again." },
+            { status: 500, headers: corsHeaders }
+          );
+        }
+
+        try {
+          await env.ACCOUNTS
+            .prepare("INSERT INTO r2_files (user_id, r2_key, file_url, content_type, size_bytes) VALUES (?, ?, ?, ?, ?)")
+            .bind(user.id, key, imageUrl, contentType, bytes.byteLength)
+            .run();
+        } catch (error) {
+          try {
+            await env.IMAGES.delete(key);
+          } catch (cleanupError) {
+            console.error("Preview image cleanup error:", cleanupError);
+            return Response.json(
+              { error: "Upload could not be recorded and its temporary file could not be removed. Contact support." },
+              { status: 500, headers: corsHeaders }
+            );
+          }
+
+          const message = String(error && error.message);
+          if (message.includes("LIMIT_R2")) {
+            return Response.json(
+              { error: "Your account has reached its R2 storage limit." },
+              { status: 403, headers: corsHeaders }
+            );
+          }
+          if (message.includes("LIMIT_D1")) {
+            return Response.json(
+              { error: "Your account has reached its 1 GB database limit." },
+              { status: 403, headers: corsHeaders }
+            );
+          }
+          console.error("Preview image record error:", error);
+          return Response.json(
+            { error: "The image uploaded, but its account record could not be saved." },
+            { status: 500, headers: corsHeaders }
+          );
+        }
+
+        return Response.json(
+          { image: imageUrl, contentType, size: bytes.byteLength },
+          { status: 201, headers: corsHeaders }
+        );
+      }
+
       // Create short link: POST /api/link
       if (pathname === "/api/link" && request.method === "POST") {
         try {
@@ -48,6 +199,47 @@ export default {
               { status: 400, headers: corsHeaders }
             );
           }
+
+          const seo = body.seo;
+          const customMeta = { title: null, description: null, image: null, siteName: null };
+          if (seo !== undefined && (!seo || typeof seo !== "object" || Array.isArray(seo))) {
+            return Response.json(
+              { error: "SEO metadata must be an object" },
+              { status: 400, headers: corsHeaders }
+            );
+          }
+          if (seo) {
+            const seoFields = [
+              ["title", 200],
+              ["description", 1000],
+              ["siteName", 100],
+              ["image", 2048]
+            ];
+            for (const [field, maxLength] of seoFields) {
+              const value = seo[field];
+              if (value !== undefined && value !== null && typeof value !== "string") {
+                return Response.json(
+                  { error: "SEO " + field + " must be text" },
+                  { status: 400, headers: corsHeaders }
+                );
+              }
+              const normalized = typeof value === "string" ? value.trim() : "";
+              if (normalized.length > maxLength) {
+                return Response.json(
+                  { error: "SEO " + field + " is too long" },
+                  { status: 400, headers: corsHeaders }
+                );
+              }
+              customMeta[field] = normalized || null;
+            }
+            if (customMeta.image && !isValidUrl(customMeta.image)) {
+              return Response.json(
+                { error: "SEO image must be an HTTP or HTTPS URL" },
+                { status: 400, headers: corsHeaders }
+              );
+            }
+          }
+          const hasCustomSeo = Object.values(customMeta).some(Boolean);
 
           // Safety check first: a flagged URL is refused before anything is
           // stored or fetched from it.
@@ -113,14 +305,19 @@ export default {
           // Insert into database. Database triggers keep usage and the audit log.
           try {
             await env.ACCOUNTS
-              .prepare("INSERT INTO links (domain, shortcode, url, created_by, safety_status, safety_threats, safety_checked_at) VALUES ('privo.fyi', ?, ?, ?, ?, ?, ?)")
+              .prepare("INSERT INTO links (domain, shortcode, url, created_by, safety_status, safety_threats, safety_checked_at, title, description, image, site_name, seo_custom) VALUES ('privo.fyi', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
               .bind(
                 shortcode,
                 targetUrl,
                 owner ? owner.id : null,
                 safety.status,
                 safety.threats ? JSON.stringify(safety.threats) : null,
-                safety.checkedAt
+                safety.checkedAt,
+                customMeta.title,
+                customMeta.description,
+                customMeta.image,
+                customMeta.siteName,
+                hasCustomSeo ? 1 : 0
               )
               .run();
           } catch (insertError) {
@@ -136,9 +333,22 @@ export default {
           // Grab the destination's SEO/preview metadata (and a copy of its
           // preview image) so privo.fyi/{shortcode} can present itself as the
           // destination. Never blocks link creation.
-          let preview = null;
+          let preview = hasCustomSeo
+            ? {
+                title: customMeta.title,
+                description: customMeta.description,
+                image: customMeta.image,
+                siteName: customMeta.siteName
+              }
+            : null;
           try {
-            const meta = await fetchPageMeta(targetUrl);
+            const fetchedMeta = await fetchPageMeta(targetUrl);
+            const meta = {
+              title: customMeta.title || fetchedMeta.title,
+              description: customMeta.description || fetchedMeta.description,
+              image: customMeta.image || fetchedMeta.image,
+              siteName: customMeta.siteName || fetchedMeta.siteName
+            };
             const imageState = await cacheImageState(env, shortcode, meta.image);
 
             await saveMeta(env, shortcode, meta, imageState);
@@ -354,6 +564,12 @@ export default {
         return serveCachedImage(env, imageMatch[1], request.method === "HEAD");
       }
 
+      // Account-uploaded preview image: privo.fyi/i/u/<uuid>
+      const uploadedImageMatch = pathname.match(/^\/i\/u\/([a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12})$/i);
+      if (uploadedImageMatch && isRead) {
+        return serveUploadedImage(env, uploadedImageMatch[1], request.method === "HEAD");
+      }
+
       // privo.fyi/44hf4 serves a tiny HTML page whose <head> mirrors the
       // destination (title, description, Open Graph, Twitter card, canonical).
       // Crawlers and link unfurlers read that; people are sent on to
@@ -362,7 +578,7 @@ export default {
         const shortcode = pathname.slice(1);
         const result = await env.ACCOUNTS
           .prepare(
-            "SELECT url, title, description, image, site_name, meta_fetched_at, image_cached, safety_status, safety_threats FROM links WHERE domain = 'privo.fyi' AND shortcode = ?"
+            "SELECT url, title, description, image, site_name, seo_custom, meta_fetched_at, image_cached, safety_status, safety_threats FROM links WHERE domain = 'privo.fyi' AND shortcode = ?"
           )
           .bind(shortcode)
           .first();
@@ -1383,9 +1599,15 @@ async function readHead(res, contentType) {
 async function saveMeta(env, shortcode, meta, imageState) {
   await env.ACCOUNTS
     .prepare(
-      "UPDATE links SET title = ?, description = ?, image = ?, site_name = ?, image_cached = ?, meta_fetched_at = datetime('now') WHERE domain = 'privo.fyi' AND shortcode = ?"
+      "UPDATE links SET title = CASE WHEN seo_custom = 1 THEN COALESCE(title, ?) ELSE ? END, description = CASE WHEN seo_custom = 1 THEN COALESCE(description, ?) ELSE ? END, image = CASE WHEN seo_custom = 1 THEN COALESCE(image, ?) ELSE ? END, site_name = CASE WHEN seo_custom = 1 THEN COALESCE(site_name, ?) ELSE ? END, image_cached = ?, meta_fetched_at = datetime('now') WHERE domain = 'privo.fyi' AND shortcode = ?"
     )
-    .bind(meta.title, meta.description, meta.image, meta.siteName, imageState, shortcode)
+    .bind(
+      meta.title, meta.title,
+      meta.description, meta.description,
+      meta.image, meta.image,
+      meta.siteName, meta.siteName,
+      imageState, shortcode
+    )
     .run();
 }
 
@@ -1394,7 +1616,15 @@ async function saveMeta(env, shortcode, meta, imageState) {
 async function backfill(env, shortcode, row) {
   try {
     if (!row.meta_fetched_at) {
-      const meta = await fetchPageMeta(row.url);
+      const fetchedMeta = await fetchPageMeta(row.url);
+      const meta = row.seo_custom
+        ? {
+            title: row.title || fetchedMeta.title,
+            description: row.description || fetchedMeta.description,
+            image: row.image || fetchedMeta.image,
+            siteName: row.site_name || fetchedMeta.siteName
+          }
+        : fetchedMeta;
       const imageState = await cacheImageState(env, shortcode, meta.image);
       await saveMeta(env, shortcode, meta, imageState);
       return;
@@ -1422,15 +1652,44 @@ function imageKey(shortcode) {
   return `og/${shortcode}`;
 }
 
+function uploadedImageKey(id) {
+  return `user-preview/${id}`;
+}
+
+function uploadedImageId(value) {
+  try {
+    const url = new URL(value);
+    const match = url.pathname.match(/^\/i\/u\/([a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12})$/i);
+    return url.protocol === "https:" &&
+      url.hostname === "privo.fyi" &&
+      !url.port &&
+      !url.username &&
+      !url.password &&
+      !url.search &&
+      !url.hash &&
+      match
+      ? match[1]
+      : null;
+  } catch (_) {
+    return null;
+  }
+}
+
 // Our own URL when a copy exists, otherwise the destination's original.
 function publicImage(shortcode, source, imageState) {
   if (!source) return null;
+  if (uploadedImageId(source)) return source;
   return Number(imageState) === 1 ? `https://privo.fyi/i/${shortcode}` : source;
 }
 
 // Returns the image_cached value to store: 0 (no image), 1 (cached), 2 (failed).
 async function cacheImageState(env, shortcode, imageUrl) {
   if (!imageUrl) return 0;
+  const uploadedId = uploadedImageId(imageUrl);
+  if (uploadedId) {
+    if (!env.IMAGES) return 2;
+    return (await env.IMAGES.head(uploadedImageKey(uploadedId))) ? 1 : 2;
+  }
   return (await cacheImage(env, shortcode, imageUrl)) ? 1 : 2;
 }
 
@@ -1511,6 +1770,35 @@ async function readLimitedBytes(res, maxBytes) {
   return out;
 }
 
+async function readLimitedRequestBody(request, maxBytes) {
+  if (!request.body) return null;
+
+  const reader = request.body.getReader();
+  const chunks = [];
+  let total = 0;
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+
+    total += value.length;
+    if (total > maxBytes) {
+      await reader.cancel();
+      return null;
+    }
+
+    chunks.push(value);
+  }
+
+  const body = new Uint8Array(total);
+  let offset = 0;
+  for (const chunk of chunks) {
+    body.set(chunk, offset);
+    offset += chunk.length;
+  }
+  return body;
+}
+
 // Identify PNG / JPEG / GIF / WebP / AVIF from magic bytes.
 function sniffImageType(b) {
   if (!b || b.length < 12) return null;
@@ -1539,6 +1827,29 @@ async function serveCachedImage(env, shortcode, headOnly) {
 
   headers.set("ETag", object.httpEtag);
   headers.set("Cache-Control", "public, max-age=86400");
+  headers.set("X-Content-Type-Options", "nosniff");
+  headers.set("Content-Security-Policy", "default-src 'none'");
+  headers.set("Cross-Origin-Resource-Policy", "cross-origin");
+  headers.set("Access-Control-Allow-Origin", "*");
+
+  return new Response(headOnly ? null : object.body, { status: 200, headers });
+}
+
+async function serveUploadedImage(env, id, headOnly) {
+  const notFound = () => new Response("Not found", {
+    status: 404,
+    headers: { "X-Content-Type-Options": "nosniff" }
+  });
+
+  if (!env.IMAGES) return notFound();
+
+  const object = await env.IMAGES.get(uploadedImageKey(id));
+  if (!object) return notFound();
+
+  const headers = new Headers();
+  object.writeHttpMetadata(headers);
+  headers.set("ETag", object.httpEtag);
+  headers.set("Cache-Control", "public, max-age=31536000, immutable");
   headers.set("X-Content-Type-Options", "nosniff");
   headers.set("Content-Security-Policy", "default-src 'none'");
   headers.set("Cross-Origin-Resource-Policy", "cross-origin");
