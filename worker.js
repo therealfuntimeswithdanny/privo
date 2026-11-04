@@ -1507,7 +1507,7 @@ async function logout(request, env, url) {
   }
 
   return redirectResponse(
-    "https://privo.fyi/cloud/signin",
+    "https://privo.fyi/cloud/login",
     [buildCookie(SESSION_COOKIE, "", { maxAge: 0, path: "/", secure: url.protocol === "https:" })],
     303
   );
@@ -1517,7 +1517,7 @@ async function logout(request, env, url) {
 // with a short error code it can present a friendly message for.
 function authRedirect(url, code, cookies = []) {
   return redirectResponse(
-    `https://privo.fyi/cloud/signin?error=${encodeURIComponent(code)}`,
+    `https://privo.fyi/cloud/login?error=${encodeURIComponent(code)}`,
     cookies
   );
 }

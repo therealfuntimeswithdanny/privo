@@ -51,7 +51,7 @@ window.Privo = (() => {
       const res = await fetch(API + "/api/me", { credentials: "include", cache: "no-store" });
 
       if (res.status === 401) {
-        window.location.replace("/cloud/signin");
+        window.location.replace("/cloud/login");
         return null;
       }
       if (!res.ok) throw new Error("HTTP " + res.status);

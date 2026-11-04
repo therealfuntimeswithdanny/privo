@@ -299,7 +299,7 @@
             try { data = await res.json(); } catch (_) { /* use the HTTP status below */ }
 
             if (res.status === 401) {
-              window.location.replace("/cloud/signin");
+              window.location.replace("/cloud/login");
               setFailure(row, "sign in again to continue");
               failed++;
               break;

@@ -361,7 +361,7 @@
       async function loadLinks() {
         const res = await fetch(API + "/api/cloud/dashboard", { credentials: "include", cache: "no-store" });
         if (res.status === 401) {
-          window.location.replace("/cloud/signin");
+          window.location.replace("/cloud/login");
           return;
         }
         if (!res.ok) throw new Error("HTTP " + res.status);
@@ -416,7 +416,7 @@
             cache: "no-store"
           });
           if (res.status === 401) {
-            window.location.replace("/cloud/signin");
+            window.location.replace("/cloud/login");
             return;
           }
           const data = await res.json();

@@ -530,7 +530,7 @@
           try { data = await res.json(); } catch (_) { /* use the HTTP status below */ }
 
           if (res.status === 401) {
-            window.location.replace("/cloud/signin");
+            window.location.replace("/cloud/login");
             return;
           }
           if (!res.ok) {

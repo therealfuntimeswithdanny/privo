@@ -281,7 +281,7 @@
           if (mine !== request) return;
 
           if (res.status === 401) {
-            window.location.replace("/cloud/signin");
+            window.location.replace("/cloud/login");
             return;
           }
           if (!res.ok) throw new Error("HTTP " + res.status);

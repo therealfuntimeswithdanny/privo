@@ -368,7 +368,7 @@
       async function refreshAll() {
         try {
           const res = await fetch(API + "/api/cloud/domains", { credentials: "include", cache: "no-store" });
-          if (res.status === 401) return window.location.replace("/cloud/signin");
+          if (res.status === 401) return window.location.replace("/cloud/login");
           if (!res.ok) throw new Error("HTTP " + res.status);
           const data = await res.json();
           domains = data.domains;
