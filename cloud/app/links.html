@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#1c1310">
+    <meta name="robots" content="noindex, nofollow">
+    <title>Privo Cloud — Links</title>
+    <script src="https://kit.fontawesome.com/8f1701cd51.js" crossorigin="anonymous" defer></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/cloud/app/app.css">
+    <style>
+    .page-title {
+      font-weight:400;
+      font-size:40px;
+      line-height:1.12;
+      margin:0 0 8px 9px;
+      letter-spacing:.2px
+    }
+    .page-intro {
+      margin:0 0 15px 9px;
+      font-size:15px
+    }
+    .links-panel {
+      min-height:480px;
+      margin-left:9px;
+      padding-bottom:14px
+    }
+    .links-panel .table-wrap {
+      flex:0 0 auto;
+      overflow:visible
+    }
+    .links-panel .data-table th {
+      font-size:15px
+    }
+    .links-panel .data-table td {
+      font-size:13px;
+      padding:10px 8px
+    }
+    .links-panel .data-table th:first-child {
+      width:22%
+    }
+    .links-panel .data-table th:nth-child(2) {
+      width:40%
+    }
+    .links-panel .data-table th:nth-child(3) {
+      width:26%
+    }
+    .links-panel .data-table th:last-child {
+      width:12%
+    }
+    .links-panel a {
+      color:var(--ink);
+      overflow-wrap:anywhere
+    }
+    .links-panel .short-link {
+      font-weight:600
+    }
+    .links-panel .destination {
+      text-decoration:none
+    }
+    .count {
+      margin:12px 0 0;
+      font-size:14px
+    }
+    .empty {
+      text-align:center;
+      padding:20px 8px !important
+    }
+    @media(max-width:700px) {
+      .page-title {
+        font-size:34px;
+        margin-left:0
+      }
+      .page-intro,.links-panel {
+        margin-left:0
+      }
+      .links-panel .table-wrap {
+        overflow:auto
+      }
+      .links-panel .data-table {
+        min-width:690px
+      }
+    }
+    </style>
+  </head>
+  <body><a class="skip" href="#main">Skip to content</a>
+    <div class="app">
+      <aside class="sidebar" aria-label="Main navigation">
+        <div class="brand">Privo Cloud</div>
+        <nav class="nav">
+          <a href="dashboard.html"><i class="fa-solid fa-house" aria-hidden="true"></i>Home</a>
+          <a href="create.html"><i class="fa-solid fa-plus" aria-hidden="true"></i>Create</a>
+          <a href="links.html" aria-current="page"><i class="fa-solid fa-list-ul" aria-hidden="true"></i>Links List</a>
+          <a href="bulk.html"><i class="fa-solid fa-box-archive" aria-hidden="true"></i>Bulk Tools</a>
+          <a href="domains.html"><i class="fa-solid fa-globe" aria-hidden="true"></i>Custom Domains</a>
+          <a href="teams.html"><i class="fa-solid fa-building" aria-hidden="true"></i>Team Management</a>
+          <a href="api.html"><i class="fa-solid fa-key" aria-hidden="true"></i>API Keys</a>
+          <a href="logs.html"><i class="fa-solid fa-scroll" aria-hidden="true"></i>Logs</a>
+        </nav>
+        <div class="side-bottom"><form method="post" action="https://api.privo.fyi/cloud/auth/logout" id="logoutForm"><button class="logout" type="submit"><i class="fa-solid fa-right-from-bracket" aria-hidden="true"></i>Log Out</button></form>
+          <div class="user-card"><img class="avatar" src="" alt="" referrerpolicy="no-referrer" hidden data-avatar><span class="name" data-name></span>
+          </div>
+        </div>
+      </aside>
+      <main id="main">
+        <h1 class="page-title">Links List</h1>
+        <p class="page-intro">Search the links on your account and open a short link or its destination.</p>
+        <section class="panel links-panel" aria-label="Your links">
+          <h2 class="panel-head search-head"><i class="fa-solid fa-list-ul" aria-hidden="true"></i><input id="linkSearch" type="search" placeholder="Search your links" aria-label="Search your links"></h2>
+          <div class="table-wrap">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th scope="col">Short Link</th>
+                  <th scope="col">Destination</th>
+                  <th scope="col">Last Modified</th>
+                  <th scope="col">Modified By</th>
+                </tr>
+              </thead>
+              <tbody id="linkRows"><tr><td class="empty" colspan="4">Loading links…</td></tr></tbody>
+            </table>
+          </div>
+          <p class="count" id="count" aria-live="polite"></p>
+        </section>
+      </main>
+    </div>
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+    <script src="/cloud/app/app.js"></script>
+    <script>
+    (() => {
+      const { API, $, showToast, formatTime, shorten } = Privo;
+      const body = $("linkRows");
+
+      Privo.loadMe();
+
+      function safeWebUrl(value, defaultProtocol) {
+        try {
+          const url = new URL(defaultProtocol ? defaultProtocol + value : value);
+          return url.protocol === "http:" || url.protocol === "https:" ? url : null;
+        } catch (_) {
+          return null;
+        }
+      }
+
+      function addLinkCell(row, value, href, className) {
+        const cell = document.createElement("td");
+        const link = document.createElement("a");
+        link.textContent = value;
+        link.href = href;
+        link.target = "_blank";
+        link.rel = "noopener noreferrer";
+        if (className) link.className = className;
+        cell.append(link);
+        row.append(cell);
+      }
+
+      function fillLinks(links) {
+        body.textContent = "";
+        if (!links.length) {
+          const row = document.createElement("tr");
+          const cell = document.createElement("td");
+          cell.className = "empty";
+          cell.colSpan = 4;
+          cell.textContent = "No links yet. Create your first link to see it here.";
+          row.append(cell);
+          body.append(row);
+          return;
+        }
+
+        for (const item of links) {
+          const row = document.createElement("tr");
+          const shortUrl = safeWebUrl(item.shortLink, "https://");
+          const destination = safeWebUrl(item.url);
+          if (shortUrl) {
+            addLinkCell(row, item.shortLink, shortUrl.href, "short-link");
+          } else {
+            const cell = document.createElement("td");
+            cell.textContent = item.shortLink || "";
+            row.append(cell);
+          }
+          if (destination) {
+            const cell = document.createElement("td");
+            const link = document.createElement("a");
+            link.className = "destination";
+            link.textContent = shorten(item.url, 90);
+            link.title = item.url;
+            link.href = destination.href;
+            link.target = "_blank";
+            link.rel = "noopener noreferrer";
+            cell.append(link);
+            row.append(cell);
+          } else {
+            const cell = document.createElement("td");
+            cell.textContent = item.url || "";
+            row.append(cell);
+          }
+          const modified = document.createElement("td");
+          modified.textContent = formatTime(item.modifiedAt);
+          row.append(modified);
+          const by = document.createElement("td");
+          by.textContent = item.modifiedBy || "";
+          row.append(by);
+          body.append(row);
+        }
+      }
+
+      $("linkSearch").addEventListener("input", (event) => {
+        const query = event.target.value.trim().toLowerCase();
+        for (const row of body.querySelectorAll("tr")) {
+          row.hidden = !!query && !row.textContent.toLowerCase().includes(query);
+        }
+      });
+
+      fetch(API + "/api/cloud/dashboard", { credentials: "include", cache: "no-store" })
+        .then((res) => {
+          if (res.status === 401) {
+            window.location.replace("/cloud/signin");
+            return null;
+          }
+          if (!res.ok) throw new Error("HTTP " + res.status);
+          return res.json();
+        })
+        .then((data) => {
+          if (!data) return;
+          fillLinks(data.links || []);
+          const total = (data.links || []).length;
+          $("count").textContent = total === 200
+            ? "Showing the 200 most recently modified links."
+            : total + " link" + (total === 1 ? "" : "s");
+        })
+        .catch(() => {
+          body.textContent = "";
+          const row = document.createElement("tr");
+          const cell = document.createElement("td");
+          cell.className = "empty";
+          cell.colSpan = 4;
+          cell.textContent = "Couldn’t load your links. Try refreshing.";
+          row.append(cell);
+          body.append(row);
+          showToast("Couldn’t load your links. Try refreshing.");
+        });
+    })();
+    </script>
+  </body>
+</html>

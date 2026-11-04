@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#1c1310">
+    <meta name="robots" content="noindex, nofollow">
+    <title>Privo Cloud — Custom Domains</title>
+    <script src="https://kit.fontawesome.com/8f1701cd51.js" crossorigin="anonymous" defer></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/cloud/app/app.css">
+    <style>
+    .page-title {
+      font-weight:400;
+      font-size:40px;
+      line-height:1.12;
+      margin:0 0 14px 9px;
+      letter-spacing:.2px
+    }
+    .domain-panel {
+      max-width:860px;
+      min-height:260px;
+      margin-left:9px;
+      padding:22px 25px
+    }
+    .domain-panel h2 {
+      display:flex;
+      align-items:center;
+      gap:12px;
+      font-size:22px;
+      font-weight:500;
+      margin:0 0 12px
+    }
+    .domain-panel h2 i {
+      color:#7a4223
+    }
+    .domain-panel p {
+      font-size:16px;
+      line-height:1.55;
+      margin:0 0 15px
+    }
+    .usage {
+      display:inline-flex;
+      align-items:center;
+      gap:7px;
+      border-radius:9px;
+      background:var(--bg);
+      color:white;
+      padding:10px 13px;
+      font-size:15px
+    }
+    .usage strong {
+      color:var(--cream);
+      font-weight:600
+    }
+    .error {
+      color:#5a1d12
+    }
+    @media(max-width:700px) {
+      .page-title {
+        font-size:34px;
+        margin-left:0
+      }
+      .domain-panel {
+        margin-left:0;
+        padding:18px
+      }
+    }
+    </style>
+  </head>
+  <body><a class="skip" href="#main">Skip to content</a>
+    <div class="app">
+      <aside class="sidebar" aria-label="Main navigation">
+        <div class="brand">Privo Cloud</div>
+        <nav class="nav">
+          <a href="dashboard.html"><i class="fa-solid fa-house" aria-hidden="true"></i>Home</a>
+          <a href="create.html"><i class="fa-solid fa-plus" aria-hidden="true"></i>Create</a>
+          <a href="links.html"><i class="fa-solid fa-list-ul" aria-hidden="true"></i>Links List</a>
+          <a href="bulk.html"><i class="fa-solid fa-box-archive" aria-hidden="true"></i>Bulk Tools</a>
+          <a href="domains.html" aria-current="page"><i class="fa-solid fa-globe" aria-hidden="true"></i>Custom Domains</a>
+          <a href="teams.html"><i class="fa-solid fa-building" aria-hidden="true"></i>Team Management</a>
+          <a href="api.html"><i class="fa-solid fa-key" aria-hidden="true"></i>API Keys</a>
+          <a href="logs.html"><i class="fa-solid fa-scroll" aria-hidden="true"></i>Logs</a>
+        </nav>
+        <div class="side-bottom"><form method="post" action="https://api.privo.fyi/cloud/auth/logout" id="logoutForm"><button class="logout" type="submit"><i class="fa-solid fa-right-from-bracket" aria-hidden="true"></i>Log Out</button></form>
+          <div class="user-card"><img class="avatar" src="" alt="" referrerpolicy="no-referrer" hidden data-avatar><span class="name" data-name></span>
+          </div>
+        </div>
+      </aside>
+      <main id="main">
+        <h1 class="page-title">Custom Domains</h1>
+        <section class="panel domain-panel" aria-labelledby="domainStatus">
+          <h2 id="domainStatus"><i class="fa-solid fa-circle-info" aria-hidden="true"></i>Domain controls aren’t available yet</h2>
+          <p>The current Privo Cloud API doesn’t provide custom-domain management operations, so domains can’t be added, verified, or removed from this page. Your account’s domain allowance is shown below.</p>
+          <p class="usage" id="usage" aria-live="polite"><strong>Domains used:</strong> Loading…</p>
+        </section>
+      </main>
+    </div>
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+    <script src="/cloud/app/app.js"></script>
+    <script>
+    (() => {
+      const { API, $, showToast } = Privo;
+
+      Privo.loadMe();
+
+      fetch(API + "/api/cloud/dashboard", { credentials: "include", cache: "no-store" })
+        .then((res) => {
+          if (res.status === 401) {
+            window.location.replace("/cloud/signin");
+            return null;
+          }
+          if (!res.ok) throw new Error("HTTP " + res.status);
+          return res.json();
+        })
+        .then((data) => {
+          if (!data) return;
+          const usage = data.usage || {};
+          $("usage").textContent = "";
+          const label = document.createElement("strong");
+          label.textContent = "Domains used:";
+          $("usage").append(label, document.createTextNode(
+            " " + (Number(usage.domains) || 0).toLocaleString() + " / " + (Number(usage.maxDomains) || 10)
+          ));
+        })
+        .catch(() => {
+          $("usage").classList.add("error");
+          $("usage").textContent = "Couldn’t load domain usage. Try refreshing.";
+          showToast("Couldn’t load your domain usage. Try refreshing.");
+        });
+    })();
+    </script>
+  </body>
+</html>

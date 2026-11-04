@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#1c1310">
+    <meta name="robots" content="noindex, nofollow">
+    <title>Privo Cloud — Bulk Tools</title>
+    <script src="https://kit.fontawesome.com/8f1701cd51.js" crossorigin="anonymous" defer></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/cloud/app/app.css">
+    <style>
+    .page-title {
+      font-weight:400;
+      font-size:40px;
+      line-height:1.12;
+      margin:0 0 8px 9px;
+      letter-spacing:.2px
+    }
+    .page-intro {
+      margin:0 0 15px 9px;
+      font-size:15px
+    }
+    .bulk-grid {
+      display:grid;
+      grid-template-columns:minmax(0,1fr) minmax(0,1fr);
+      gap:13px;
+      margin-left:9px;
+      align-items:start
+    }
+    .bulk-grid .panel {
+      min-height:310px;
+      padding-bottom:18px
+    }
+    .label {
+      display:block;
+      font-size:15px;
+      margin:9px 0 6px
+    }
+    .hint {
+      font-size:13px;
+      line-height:1.45;
+      margin:8px 0 0
+    }
+    .bulk-input {
+      display:block;
+      width:100%;
+      min-height:240px;
+      resize:vertical;
+      border:0;
+      outline:0;
+      border-radius:10px;
+      background:var(--bg);
+      color:white;
+      padding:12px;
+      font-size:14px;
+      line-height:1.5
+    }
+    .bulk-input::placeholder {
+      color:white;
+      opacity:.65
+    }
+    .bulk-input:focus {
+      box-shadow:0 0 0 3px var(--cream)
+    }
+    .submit {
+      width:100%;
+      min-height:45px;
+      margin-top:14px;
+      border:0;
+      border-radius:10px;
+      background:var(--bg);
+      color:white;
+      font-size:17px;
+      cursor:pointer
+    }
+    .submit:hover {
+      background:#302019
+    }
+    .submit:disabled {
+      opacity:.6;
+      cursor:progress
+    }
+    .summary {
+      min-height:22px;
+      margin:0 0 8px;
+      font-size:14px
+    }
+    .results {
+      margin:0;
+      padding:0;
+      list-style:none
+    }
+    .results li {
+      display:grid;
+      grid-template-columns:minmax(0,1fr) auto;
+      gap:10px;
+      align-items:center;
+      padding:8px 0;
+      border-top:1px solid rgba(23,15,12,.35);
+      font-size:13px
+    }
+    .result-text {
+      min-width:0;
+      overflow-wrap:anywhere
+    }
+    .result-state {
+      font-weight:600;
+      white-space:nowrap
+    }
+    .result-state[data-status=created] {
+      color:#14542c
+    }
+    .result-state[data-status=failed] {
+      color:#5a1d12
+    }
+    .result-state[data-status=working] {
+      color:#4c3510
+    }
+    .results a {
+      color:var(--ink)
+    }
+    @media(max-width:1050px) {
+      .bulk-grid {
+        grid-template-columns:1fr
+      }
+    }
+    @media(max-width:700px) {
+      .page-title {
+        font-size:34px;
+        margin-left:0
+      }
+      .page-intro,.bulk-grid {
+        margin-left:0
+      }
+    }
+    </style>
+  </head>
+  <body><a class="skip" href="#main">Skip to content</a>
+    <div class="app">
+      <aside class="sidebar" aria-label="Main navigation">
+        <div class="brand">Privo Cloud</div>
+        <nav class="nav">
+          <a href="dashboard.html"><i class="fa-solid fa-house" aria-hidden="true"></i>Home</a>
+          <a href="create.html"><i class="fa-solid fa-plus" aria-hidden="true"></i>Create</a>
+          <a href="links.html"><i class="fa-solid fa-list-ul" aria-hidden="true"></i>Links List</a>
+          <a href="bulk.html" aria-current="page"><i class="fa-solid fa-box-archive" aria-hidden="true"></i>Bulk Tools</a>
+          <a href="domains.html"><i class="fa-solid fa-globe" aria-hidden="true"></i>Custom Domains</a>
+          <a href="teams.html"><i class="fa-solid fa-building" aria-hidden="true"></i>Team Management</a>
+          <a href="api.html"><i class="fa-solid fa-key" aria-hidden="true"></i>API Keys</a>
+          <a href="logs.html"><i class="fa-solid fa-scroll" aria-hidden="true"></i>Logs</a>
+        </nav>
+        <div class="side-bottom"><form method="post" action="https://api.privo.fyi/cloud/auth/logout" id="logoutForm"><button class="logout" type="submit"><i class="fa-solid fa-right-from-bracket" aria-hidden="true"></i>Log Out</button></form>
+          <div class="user-card"><img class="avatar" src="" alt="" referrerpolicy="no-referrer" hidden data-avatar><span class="name" data-name></span>
+          </div>
+        </div>
+      </aside>
+      <main id="main">
+        <h1 class="page-title">Bulk Tools</h1>
+        <p class="page-intro">Create several short links in one run. Each link is checked and saved individually.</p>
+        <div class="bulk-grid">
+          <section class="panel" aria-labelledby="bulkLabel">
+            <form id="bulkForm">
+              <label class="label" id="bulkLabel" for="bulkInput">URLs to shorten</label>
+              <textarea class="bulk-input" id="bulkInput" spellcheck="false" placeholder="https://example.com/first&#10;https://example.com/second&#9;mycode" required aria-describedby="bulkHint"></textarea>
+              <p class="hint" id="bulkHint">Enter one URL per line. Optionally add a custom ending after a tab: URL, then a tab, then 4–20 letters or numbers. Each line is submitted separately; valid links may be created even if another line fails.</p>
+              <button class="submit" id="submit" type="submit">Create links</button>
+            </form>
+          </section>
+          <section class="panel" aria-labelledby="resultsTitle" aria-live="polite">
+            <h2 class="label" id="resultsTitle">Results</h2>
+            <p class="summary" id="summary">Results will appear here after you start a run.</p>
+            <ol class="results" id="results"></ol>
+          </section>
+        </div>
+      </main>
+    </div>
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+    <script src="/cloud/app/app.js"></script>
+    <script>
+    (() => {
+      const { API, $, showToast } = Privo;
+      const form = $("bulkForm");
+      const input = $("bulkInput");
+      const submit = $("submit");
+      const results = $("results");
+      let running = false;
+
+      Privo.loadMe();
+
+      input.addEventListener("keydown", (event) => {
+        if (event.key !== "Tab" || event.shiftKey || event.altKey || event.ctrlKey || event.metaKey) return;
+        event.preventDefault();
+        input.setRangeText("\t", input.selectionStart, input.selectionEnd, "end");
+      });
+
+      function parseLines() {
+        const entries = [];
+        const errors = [];
+        const seenShortcodes = new Set();
+        const lines = input.value.split(/\r?\n/);
+
+        lines.forEach((source, index) => {
+          const value = source.trim();
+          if (!value || value.startsWith("#")) return;
+          const fields = value.split("\t").map((field) => field.trim());
+          if (fields.length > 2 || !fields[0]) {
+            errors.push("Line " + (index + 1) + ": use a URL and, optionally, one tab followed by a custom ending.");
+            return;
+          }
+
+          let rawUrl = fields[0];
+          if (!/^[a-z][a-z0-9+.-]*:/i.test(rawUrl)) rawUrl = "https://" + rawUrl;
+          let url;
+          try {
+            url = new URL(rawUrl);
+          } catch (_) {
+            errors.push("Line " + (index + 1) + ": enter a valid web address.");
+            return;
+          }
+          if (url.protocol !== "http:" && url.protocol !== "https:") {
+            errors.push("Line " + (index + 1) + ": only http:// and https:// addresses are supported.");
+            return;
+          }
+
+          const shortcode = fields[1] || "";
+          if (shortcode && !/^[a-zA-Z0-9]{4,20}$/.test(shortcode)) {
+            errors.push("Line " + (index + 1) + ": custom endings must be 4–20 letters or numbers.");
+            return;
+          }
+          if (shortcode && seenShortcodes.has(shortcode)) {
+            errors.push("Line " + (index + 1) + ": custom ending “" + shortcode + "” is listed more than once.");
+            return;
+          }
+          if (shortcode) seenShortcodes.add(shortcode);
+          entries.push({ line: index + 1, url: url.href, shortcode });
+        });
+
+        if (!entries.length && !errors.length) errors.push("Enter at least one URL.");
+        return { entries, errors };
+      }
+
+      function addResult(entry) {
+        const item = document.createElement("li");
+        const text = document.createElement("span");
+        text.className = "result-text";
+        text.textContent = "Line " + entry.line + " · " + (entry.shortcode || entry.url);
+        const status = document.createElement("span");
+        status.className = "result-state";
+        status.dataset.status = "pending";
+        status.textContent = "Waiting";
+        item.append(text, status);
+        results.append(item);
+        return { item, text, status };
+      }
+
+      function setFailure(row, message) {
+        row.status.dataset.status = "failed";
+        row.status.textContent = "Failed";
+        row.text.textContent += " — " + message;
+      }
+
+      form.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        if (running) return;
+
+        const parsed = parseLines();
+        if (parsed.errors.length) {
+          $("summary").textContent = parsed.errors.join(" ");
+          showToast("Fix the input errors before creating links.");
+          return;
+        }
+
+        running = true;
+        submit.disabled = true;
+        input.disabled = true;
+        submit.textContent = "Creating…";
+        results.textContent = "";
+        const rows = parsed.entries.map((entry) => ({ entry, row: addResult(entry) }));
+        let created = 0;
+        let failed = 0;
+        $("summary").textContent = "Creating " + rows.length + " link" + (rows.length === 1 ? "" : "s") + "…";
+
+        for (const { entry, row } of rows) {
+          row.status.dataset.status = "working";
+          row.status.textContent = "Creating…";
+          try {
+            const res = await fetch(API + "/api/link", {
+              method: "POST",
+              credentials: "include",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(entry.shortcode
+                ? { url: entry.url, shortcode: entry.shortcode }
+                : { url: entry.url })
+            });
+            let data = {};
+            try { data = await res.json(); } catch (_) { /* use the HTTP status below */ }
+
+            if (res.status === 401) {
+              window.location.replace("/cloud/signin");
+              setFailure(row, "sign in again to continue");
+              failed++;
+              break;
+            }
+            if (res.status !== 201) {
+              setFailure(row, data.error || "Request failed (HTTP " + res.status + ").");
+              failed++;
+              continue;
+            }
+
+            row.text.textContent = "Line " + entry.line + " · ";
+            const shortUrl = document.createElement("a");
+            shortUrl.href = data.shortUrl;
+            shortUrl.target = "_blank";
+            shortUrl.rel = "noopener noreferrer";
+            shortUrl.textContent = data.shortUrl.replace(/^https?:\/\//, "");
+            row.text.append(shortUrl);
+            row.status.dataset.status = "created";
+            row.status.textContent = "Created";
+            created++;
+          } catch (_) {
+            setFailure(row, "Couldn’t reach Privo. Check your connection.");
+            failed++;
+          }
+        }
+
+        $("summary").textContent = created + " created · " + failed + " failed" +
+          (created + failed < rows.length ? " · remaining links not attempted" : "");
+        if (created) showToast(created + " link" + (created === 1 ? "" : "s") + " created");
+        running = false;
+        submit.disabled = false;
+        input.disabled = false;
+        submit.textContent = "Create links";
+      });
+    })();
+    </script>
+  </body>
+</html>

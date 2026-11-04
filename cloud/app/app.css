@@ -5,7 +5,7 @@
       --cream:#e8c28a;
       --white:#fff;
       --ink:#170f0c;
-      --sidebar:250px
+      --sidebar:clamp(220px,19vw,280px)
     }
     * {
       box-sizing:border-box
@@ -45,14 +45,17 @@
     }
     .sidebar {
       height:100vh;
-      min-height:600px;
+      height:100dvh;
+      min-height:0;
       position:sticky;
       top:0;
       background:var(--peach);
       color:var(--bg);
-      padding:3px 10px 10px;
+      padding:8px 10px 12px;
       display:flex;
-      flex-direction:column
+      flex-direction:column;
+      overflow-y:auto;
+      overscroll-behavior:contain
     }
     .brand {
       font-size:38px;
@@ -65,10 +68,10 @@
     .nav {
       display:flex;
       flex-direction:column;
-      gap:12px
+      gap:clamp(6px,.8vh,10px)
     }
     .nav a,.logout,.user-card {
-      height:45px;
+      min-height:45px;
       border-radius:11px;
       background:var(--bg);
       color:white;
@@ -78,38 +81,37 @@
       padding:0 10px;
       gap:11px;
       font-size:15px;
-      font-weight:400
+      font-weight:400;
+      line-height:1.2
     }
     .nav a {
-      transition:background .15s
+      height:auto;
+      transition:background .15s,transform .15s
     }
     .nav a:hover,.logout:hover {
-      background:#302019
+      background:#302019;
+      transform:translateX(2px)
     }
     .nav a[aria-current=page] {
-      background:var(--bg)
+      background:#302019
     }
-    .nav i,.logout i {
+    .nav a:focus-visible,.logout:focus-visible {
+      outline:3px solid var(--cream);
+      outline-offset:2px
+    }
+    .nav i {
       width:29px;
       flex:0 0 29px;
       text-align:center;
       color:var(--peach);
-      font-size:35px
+      font-size:27px
     }
-    .nav a:nth-child(3) i {
-      font-size:34px
-    }
-    .nav a:nth-child(4) i {
-      font-size:32px
-    }
-    .nav a:nth-child(5) i {
-      font-size:34px
-    }
-    .nav a:nth-child(6) i {
-      font-size:32px
-    }
-    .nav a:nth-child(7) i {
-      font-size:32px
+    .logout i {
+      width:29px;
+      flex:0 0 29px;
+      text-align:center;
+      color:var(--peach);
+      font-size:30px
     }
     .side-bottom {
       margin-top:auto
@@ -174,33 +176,36 @@
     }
     .stats {
       display:grid;
-      grid-template-columns:repeat(4,minmax(0,1fr));
+      grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr));
       gap:14px;
       margin:0 0 12px 9px
     }
     .stat {
-      height:126px;
+      min-height:136px;
       min-width:0;
       border-radius:11px;
-      background:var(--peach);
+      background:linear-gradient(145deg,#dda36c 0%,var(--peach) 72%);
       color:white;
-      padding:9px 10px;
-      overflow:hidden
+      padding:14px 16px;
+      display:flex;
+      flex-direction:column;
+      justify-content:space-between;
+      border:1px solid rgba(232,194,138,.45);
+      box-shadow:0 8px 20px rgba(0,0,0,.14)
     }
     .stat h2 {
-      font-size:23px;
+      font-size:clamp(18px,1.55vw,23px);
       font-weight:400;
       line-height:1.15;
-      margin:0 0 3px;
-      white-space:nowrap
+      margin:0 0 12px
     }
     .stat p {
-      font-size:39px;
+      font-size:clamp(28px,2.5vw,39px);
       font-weight:400;
       line-height:1.05;
-      letter-spacing:-1.3px;
+      letter-spacing:-1px;
       margin:0;
-      white-space:nowrap
+      overflow-wrap:anywhere
     }
     .dashboard {
       display:grid;
@@ -424,31 +429,63 @@
         height:auto;
         min-height:0;
         position:relative;
-        padding:8px 12px 12px
+        padding:10px 12px 12px;
+        overflow:visible
       }
       .brand {
         font-size:30px;
         margin-bottom:10px
       }
       .nav {
-        flex-direction:row;
-        overflow-x:auto;
+        display:grid;
+        grid-template-columns:repeat(2,minmax(0,1fr));
         gap:7px;
-        padding-bottom:3px
+        padding-bottom:0
       }
       .nav a {
-        height:40px;
-        flex:0 0 auto;
-        padding:0 10px;
+        min-height:44px;
+        padding:7px 9px;
+        gap:8px;
         font-size:13px
       }
-      .nav i,.nav a:nth-child(n) i {
-        font-size:22px;
+      .nav a:hover,.logout:hover {
+        transform:none
+      }
+      .nav i {
+        font-size:20px;
         width:22px;
         flex-basis:22px
       }
       .side-bottom {
-        display:none
+        display:grid;
+        grid-template-columns:auto minmax(0,1fr);
+        align-items:center;
+        gap:8px;
+        margin-top:10px
+      }
+      .logout {
+        min-height:44px;
+        padding:0 9px;
+        gap:7px;
+        margin:0;
+        font-size:13px
+      }
+      .logout i {
+        width:22px;
+        flex-basis:22px;
+        font-size:21px
+      }
+      .user-card {
+        min-width:0;
+        min-height:44px;
+        height:auto;
+        padding:4px 7px;
+        gap:7px
+      }
+      .user-card .avatar {
+        width:34px;
+        height:34px;
+        flex-basis:34px
       }
       main {
         padding:25px 15px
@@ -491,6 +528,22 @@
 
     }
     @media(max-width:390px) {
+      .nav {
+        gap:6px
+      }
+      .nav a {
+        padding:7px;
+        gap:6px;
+        font-size:12px
+      }
+      .nav i {
+        width:20px;
+        flex-basis:20px;
+        font-size:18px
+      }
+      .user-card .name {
+        font-size:13px
+      }
       .stats {
         grid-template-columns:repeat(2,minmax(0,1fr))
       }

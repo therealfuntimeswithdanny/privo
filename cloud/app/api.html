@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#1c1310">
+    <meta name="robots" content="noindex, nofollow">
+    <title>Privo Cloud — API Keys</title>
+    <script src="https://kit.fontawesome.com/8f1701cd51.js" crossorigin="anonymous" defer></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/cloud/app/app.css">
+    <style>
+    .page-title {
+      font-weight:400;
+      font-size:40px;
+      line-height:1.12;
+      margin:0 0 14px 9px;
+      letter-spacing:.2px
+    }
+    .api-panel {
+      max-width:860px;
+      min-height:260px;
+      margin-left:9px;
+      padding:22px 25px
+    }
+    .api-panel h2 {
+      display:flex;
+      align-items:center;
+      gap:12px;
+      font-size:22px;
+      font-weight:500;
+      margin:0 0 12px
+    }
+    .api-panel h2 i {
+      color:#7a4223
+    }
+    .api-panel p {
+      font-size:16px;
+      line-height:1.55;
+      margin:0 0 15px
+    }
+    @media(max-width:700px) {
+      .page-title {
+        font-size:34px;
+        margin-left:0
+      }
+      .api-panel {
+        margin-left:0;
+        padding:18px
+      }
+    }
+    </style>
+  </head>
+  <body><a class="skip" href="#main">Skip to content</a>
+    <div class="app">
+      <aside class="sidebar" aria-label="Main navigation">
+        <div class="brand">Privo Cloud</div>
+        <nav class="nav">
+          <a href="dashboard.html"><i class="fa-solid fa-house" aria-hidden="true"></i>Home</a>
+          <a href="create.html"><i class="fa-solid fa-plus" aria-hidden="true"></i>Create</a>
+          <a href="links.html"><i class="fa-solid fa-list-ul" aria-hidden="true"></i>Links List</a>
+          <a href="bulk.html"><i class="fa-solid fa-box-archive" aria-hidden="true"></i>Bulk Tools</a>
+          <a href="domains.html"><i class="fa-solid fa-globe" aria-hidden="true"></i>Custom Domains</a>
+          <a href="teams.html"><i class="fa-solid fa-building" aria-hidden="true"></i>Team Management</a>
+          <a href="api.html" aria-current="page"><i class="fa-solid fa-key" aria-hidden="true"></i>API Keys</a>
+          <a href="logs.html"><i class="fa-solid fa-scroll" aria-hidden="true"></i>Logs</a>
+        </nav>
+        <div class="side-bottom"><form method="post" action="https://api.privo.fyi/cloud/auth/logout" id="logoutForm"><button class="logout" type="submit"><i class="fa-solid fa-right-from-bracket" aria-hidden="true"></i>Log Out</button></form>
+          <div class="user-card"><img class="avatar" src="" alt="" referrerpolicy="no-referrer" hidden data-avatar><span class="name" data-name></span>
+          </div>
+        </div>
+      </aside>
+      <main id="main">
+        <h1 class="page-title">API Keys</h1>
+        <section class="panel api-panel" aria-labelledby="apiStatus">
+          <h2 id="apiStatus"><i class="fa-solid fa-circle-info" aria-hidden="true"></i>API key controls aren’t available yet</h2>
+          <p>The current Privo Cloud API doesn’t provide user API key management, so keys can’t be created, viewed, or revoked from this page.</p>
+        </section>
+      </main>
+    </div>
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+    <script src="/cloud/app/app.js"></script>
+    <script>
+    Privo.loadMe();
+    </script>
+  </body>
+</html>
