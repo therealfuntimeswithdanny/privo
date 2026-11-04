@@ -1,7 +1,9 @@
 export default {
-  // Cron trigger (every 12 hours): re-check existing links against Web Risk.
+  // Cron trigger (every 12 hours): re-check existing links against Web Risk,
+  // and re-check custom domains still waiting on DNS/cert activation.
   async scheduled(event, env, ctx) {
     ctx.waitUntil(recheckLinks(env));
+    ctx.waitUntil(recheckDomains(env));
   },
 
   async fetch(request, env, ctx) {
@@ -15,7 +17,7 @@ export default {
     const corsHeaders = {
       "Access-Control-Allow-Origin": "https://privo.fyi",
       "Access-Control-Allow-Credentials": "true",
-      "Access-Control-Allow-Methods": "GET, POST, PUT, OPTIONS",
+      "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
       "Access-Control-Allow-Headers": "Content-Type",
       "Cache-Control": "no-store, no-cache, must-revalidate, private"
     };
@@ -623,6 +625,11 @@ export default {
           console.error("Dashboard error:", error && error.message);
           return Response.json({ error: "Could not load the dashboard" }, { status: 500, headers: meHeaders });
         }
+      }
+
+      // Custom domains: /api/cloud/domains (list, add), /:id (remove), /:id/verify
+      if (pathname.startsWith("/api/cloud/domains")) {
+        return handleDomains(request, env, url);
       }
 
       // Audit log, newest first, 50 at a time: GET /api/cloud/logs?category=&before=<id>
@@ -1648,6 +1655,240 @@ async function loadDashboard(env, user) {
 }
 
 // ==========================================
+// Custom domains (Cloudflare for SaaS custom hostnames)
+// ==========================================
+//
+// Customers CNAME their domain to CNAME_TARGET. Cloudflare then issues the
+// certificate and tells us when it's active, which sets domains.verified = 1.
+// Requires: CF_API_TOKEN (secret, Zone > SSL and Certificates > Edit), CF_ZONE_ID (var).
+
+const CF_API = "https://api.cloudflare.com/client/v4";
+const CNAME_TARGET = "dns.privo.fyi";
+const DOMAIN_RECHECK_BATCH = 20;
+
+// Lowercase letters, digits and hyphens; at least two labels; no IPs; no privo.fyi itself.
+const HOSTNAME_RE = /^(?=.{4,253}$)([a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])\.)+[a-z]{2,63}$/;
+
+function normalizeHostname(input) {
+  if (typeof input !== "string") return null;
+  const h = input.trim().toLowerCase().replace(/^https?:\/\//, "").split("/")[0].replace(/\.$/, "");
+  if (!HOSTNAME_RE.test(h)) return null;
+  if (h === "privo.fyi" || h.endsWith(".privo.fyi")) return null;
+  return h;
+}
+
+// One call to the Cloudflare API for this zone. Never throws.
+async function cf(env, method, path, body) {
+  try {
+    const res = await fetch(`${CF_API}/zones/${env.CF_ZONE_ID}${path}`, {
+      method,
+      headers: {
+        "Authorization": `Bearer ${env.CF_API_TOKEN}`,
+        "Content-Type": "application/json"
+      },
+      body: body ? JSON.stringify(body) : undefined
+    });
+    let data = {};
+    try { data = await res.json(); } catch (_) { /* empty body */ }
+    const errors = Array.isArray(data.errors) ? data.errors : [];
+    return { ok: res.ok && data.success !== false, status: res.status, result: data.result || null, errors };
+  } catch (error) {
+    console.error("Cloudflare API error:", error && error.message);
+    return { ok: false, status: 0, result: null, errors: [] };
+  }
+}
+
+// Turn a Cloudflare custom hostname into what we store.
+function domainState(result) {
+  const status = (result && result.status) || "pending";
+  const verificationError = result && Array.isArray(result.verification_errors) ? result.verification_errors[0] : null;
+  return {
+    status,
+    verified: status === "active",
+    error: status === "active" ? null : (verificationError || null)
+  };
+}
+
+function domainJson(row, extra = {}) {
+  return {
+    id: row.id,
+    hostname: row.hostname,
+    verified: Boolean(row.verified),
+    status: row.status || "pending",
+    error: row.error || null,
+    cnameTarget: CNAME_TARGET,
+    ...extra
+  };
+}
+
+async function handleDomains(request, env, url) {
+  const headers = { "Access-Control-Allow-Origin": "https://privo.fyi", "Access-Control-Allow-Credentials": "true", "Cache-Control": "no-store" };
+  const isWrite = request.method !== "GET";
+
+  // Changes only come from the dashboard on privo.fyi.
+  if (isWrite && request.headers.get("Origin") !== "https://privo.fyi") {
+    return Response.json({ error: "Forbidden" }, { status: 403, headers });
+  }
+
+  const user = await getSessionUser(request, env);
+  if (!user) return Response.json({ error: "Not signed in" }, { status: 401, headers });
+
+  if (!env.CF_API_TOKEN || !env.CF_ZONE_ID) {
+    return Response.json({ error: "Custom domains aren't set up yet." }, { status: 503, headers });
+  }
+
+  const path = url.pathname;
+  const byId = path.match(/^\/api\/cloud\/domains\/(\d+)$/);
+  const verify = path.match(/^\/api\/cloud\/domains\/(\d+)\/verify$/);
+
+  try {
+    if (path === "/api/cloud/domains" && request.method === "GET") {
+      return listDomains(env, user, headers);
+    }
+    if (path === "/api/cloud/domains" && request.method === "POST") {
+      return addDomain(request, env, user, headers);
+    }
+    if (verify && request.method === "POST") {
+      return verifyDomain(env, user, Number(verify[1]), headers);
+    }
+    if (byId && request.method === "DELETE") {
+      return removeDomain(env, user, Number(byId[1]), headers);
+    }
+    return Response.json({ error: "Not found" }, { status: 404, headers });
+  } catch (error) {
+    console.error("Domains error:", error && error.message);
+    return Response.json({ error: "Something went wrong. Try again." }, { status: 500, headers });
+  }
+}
+
+async function listDomains(env, user, headers) {
+  const [rows, usage] = await env.ACCOUNTS.batch([
+    env.ACCOUNTS
+      .prepare("SELECT id, hostname, verified, status, error, created_at FROM domains WHERE owner_id = ? ORDER BY created_at DESC, id DESC")
+      .bind(user.id),
+    env.ACCOUNTS.prepare("SELECT domains, max_domains FROM usage WHERE user_id = ?").bind(user.id)
+  ]);
+
+  const u = usage.results[0] || {};
+  return Response.json({
+    domains: rows.results.map((r) => ({ ...domainJson(r), modifiedAt: r.created_at })),
+    usage: { domains: u.domains || 0, maxDomains: u.max_domains || 10 },
+    cnameTarget: CNAME_TARGET
+  }, { headers });
+}
+
+async function addDomain(request, env, user, headers) {
+  let body;
+  try { body = await request.json(); } catch (_) { body = {}; }
+
+  const hostname = normalizeHostname(body.hostname);
+  if (!hostname) {
+    return Response.json({ error: "Enter a domain like links.example.com. privo.fyi can't be used." }, { status: 400, headers });
+  }
+
+  const taken = await env.ACCOUNTS.prepare("SELECT id FROM domains WHERE hostname = ?").bind(hostname).first();
+  if (taken) return Response.json({ error: "That domain is already in use." }, { status: 409, headers });
+
+  const created = await cf(env, "POST", "/custom_hostnames", {
+    hostname,
+    ssl: { method: "http", type: "dv", settings: { min_tls_version: "1.2" } }
+  });
+
+  if (!created.ok || !created.result) {
+    console.error("Custom hostname create failed:", created.status, JSON.stringify(created.errors));
+    const duplicate = created.errors.some((e) => /already|duplicate|exists/i.test(e.message || ""));
+    return Response.json(
+      { error: duplicate ? "That domain is already in use." : "Couldn't add that domain right now. Try again." },
+      { status: duplicate ? 409 : 502, headers }
+    );
+  }
+
+  const cfId = created.result.id;
+  const state = domainState(created.result);
+
+  try {
+    const row = await env.ACCOUNTS
+      .prepare("INSERT INTO domains (owner_id, hostname, verified, cf_id, status, error) VALUES (?, ?, ?, ?, ?, ?) RETURNING id, hostname, verified, status, error")
+      .bind(user.id, hostname, state.verified ? 1 : 0, cfId, state.status, state.error)
+      .first();
+
+    return Response.json(domainJson(row), { status: 201, headers });
+  } catch (error) {
+    // Couldn't save it (usually the 10-domain limit): undo the Cloudflare side.
+    await cf(env, "DELETE", `/custom_hostnames/${cfId}`);
+    if (String(error && error.message).includes("LIMIT_DOMAINS")) {
+      return Response.json({ error: "You've reached your limit of 10 custom domains." }, { status: 403, headers });
+    }
+    throw error;
+  }
+}
+
+async function verifyDomain(env, user, id, headers) {
+  const row = await env.ACCOUNTS
+    .prepare("SELECT id, hostname, cf_id FROM domains WHERE id = ? AND owner_id = ?")
+    .bind(id, user.id)
+    .first();
+  if (!row) return Response.json({ error: "Not found" }, { status: 404, headers });
+
+  const res = await cf(env, "GET", `/custom_hostnames/${row.cf_id}`);
+  if (!res.ok || !res.result) {
+    return Response.json({ error: "Couldn't check that domain right now. Try again." }, { status: 502, headers });
+  }
+
+  const state = domainState(res.result);
+  await env.ACCOUNTS
+    .prepare("UPDATE domains SET verified = ?, status = ?, error = ? WHERE id = ?")
+    .bind(state.verified ? 1 : 0, state.status, state.error, id)
+    .run();
+
+  return Response.json(domainJson({ id, hostname: row.hostname, ...state, verified: state.verified }), { headers });
+}
+
+async function removeDomain(env, user, id, headers) {
+  const row = await env.ACCOUNTS
+    .prepare("SELECT id, hostname, cf_id FROM domains WHERE id = ? AND owner_id = ?")
+    .bind(id, user.id)
+    .first();
+  if (!row) return Response.json({ error: "Not found" }, { status: 404, headers });
+
+  if (row.cf_id) {
+    const res = await cf(env, "DELETE", `/custom_hostnames/${row.cf_id}`);
+    if (!res.ok && res.status !== 404) {
+      return Response.json({ error: "Couldn't remove that domain right now. Try again." }, { status: 502, headers });
+    }
+  }
+
+  // Links on the domain go with it. The triggers adjust usage and the audit log.
+  await env.ACCOUNTS.batch([
+    env.ACCOUNTS.prepare("DELETE FROM links WHERE domain = ?").bind(row.hostname),
+    env.ACCOUNTS.prepare("DELETE FROM domains WHERE id = ?").bind(id)
+  ]);
+
+  return Response.json({ ok: true }, { headers });
+}
+
+// Cron: checks domains still waiting on DNS, oldest first.
+async function recheckDomains(env) {
+  if (!env.CF_API_TOKEN || !env.CF_ZONE_ID) return;
+
+  const { results } = await env.ACCOUNTS
+    .prepare("SELECT id, cf_id FROM domains WHERE verified = 0 AND cf_id IS NOT NULL ORDER BY id LIMIT ?")
+    .bind(DOMAIN_RECHECK_BATCH)
+    .all();
+
+  for (const row of results) {
+    const res = await cf(env, "GET", `/custom_hostnames/${row.cf_id}`);
+    if (!res.ok || !res.result) continue;
+
+    const state = domainState(res.result);
+    await env.ACCOUNTS
+      .prepare("UPDATE domains SET verified = ?, status = ?, error = ? WHERE id = ?")
+      .bind(state.verified ? 1 : 0, state.status, state.error, row.id)
+      .run();
+  }
+}
+
+// ==========================================
 // Destination metadata
 // ==========================================
 
@@ -1688,7 +1929,7 @@ async function fetchPageMeta(targetUrl) {
     });
 
     const contentType = res.headers.get("content-type") || "";
-    if (!res.ok || !/text\/html|application\/xhtml/i.test(contentType) || !res.body) {
+    if (!res.ok || !/text/html|application/xhtml/i.test(contentType) || !res.body) {
       return empty;
     }
 

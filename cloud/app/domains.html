@@ -19,53 +19,180 @@
       margin:0 0 14px 9px;
       letter-spacing:.2px
     }
-    .domain-panel {
-      max-width:860px;
-      min-height:260px;
+    .domain-grid {
+      display:grid;
+      grid-template-columns:minmax(0,1fr) minmax(0,1fr);
+      gap:13px;
       margin-left:9px;
-      padding:22px 25px
+      align-items:stretch
     }
-    .domain-panel h2 {
+    .domain-grid .panel {
+      padding-bottom:18px
+    }
+    #dnsPanel[hidden] {
+      display:none
+    }
+    .label {
+      display:block;
+      font-size:14px;
+      margin:10px 0 5px
+    }
+    .field {
+      margin:0;
       display:flex;
       align-items:center;
-      gap:12px;
-      font-size:22px;
-      font-weight:500;
-      margin:0 0 12px
+      gap:10px
     }
-    .domain-panel h2 i {
-      color:#7a4223
+    .field i {
+      color:var(--peach);
+      flex:0 0 auto
     }
-    .domain-panel p {
+    .field input {
+      width:100%;
+      min-width:0;
+      background:transparent;
+      color:white;
+      border:0;
+      outline:0;
+      font-size:20px;
+      padding:0
+    }
+    .field input::placeholder {
+      color:white;
+      opacity:.55
+    }
+    .field:focus-within {
+      box-shadow:0 0 0 3px var(--cream)
+    }
+    .btn {
+      border:0;
+      cursor:pointer;
+      color:white;
+      background:var(--bg);
+      border-radius:10px;
       font-size:16px;
-      line-height:1.55;
-      margin:0 0 15px
+      height:40px;
+      padding:0 16px;
+      transition:background .15s;
+      white-space:nowrap
     }
-    .usage {
-      display:inline-flex;
+    .btn:hover {
+      background:#302019
+    }
+    .btn:disabled {
+      opacity:.6;
+      cursor:progress
+    }
+    .btn.danger:hover {
+      background:#5a1d12
+    }
+    .btn.small {
+      height:30px;
+      font-size:13px;
+      padding:0 10px
+    }
+    .submit {
+      width:100%;
+      height:45px;
+      margin-top:16px;
+      font-size:18px
+    }
+    .form-error {
+      margin:12px 0 0;
+      font-size:15px;
+      font-weight:500;
+      color:#5a1d12
+    }
+    .hint {
+      font-size:13px;
+      margin:8px 0 0;
+      opacity:.85
+    }
+    .dns-row {
+      display:grid;
+      grid-template-columns:auto minmax(0,1fr) auto;
+      gap:8px 10px;
       align-items:center;
+      margin-top:10px;
+      font-size:15px
+    }
+    .dns-row .k {
+      opacity:.8
+    }
+    .dns-row code {
+      background:var(--bg);
+      color:white;
+      border-radius:8px;
+      padding:6px 10px;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      white-space:nowrap;
+      font-size:15px
+    }
+    .pill {
+      display:inline-block;
+      border-radius:999px;
+      padding:3px 10px;
+      font-size:12px;
+      background:var(--bg);
+      color:white;
+      white-space:nowrap
+    }
+    .pill.ok {
+      background:#2e4a1f;
+      color:#e8f5d0
+    }
+    .pill.wait {
+      background:#302019;
+      color:var(--cream)
+    }
+    .pill.bad {
+      background:#5a1d12;
+      color:white
+    }
+    .actions {
+      display:flex;
+      gap:6px;
+      flex-wrap:wrap
+    }
+    .table-wrap {
+      overflow:auto
+    }
+    .domain-table td {
+      vertical-align:middle
+    }
+    .domain-table td:nth-child(1) {
+      overflow-wrap:anywhere
+    }
+    .usage-line {
+      display:inline-flex;
       gap:7px;
       border-radius:9px;
       background:var(--bg);
       color:white;
       padding:10px 13px;
-      font-size:15px
+      font-size:15px;
+      margin:0 0 14px 9px
     }
-    .usage strong {
+    .usage-line strong {
       color:var(--cream);
       font-weight:600
     }
-    .error {
-      color:#5a1d12
+    @media(max-width:1050px) {
+      .domain-grid {
+        grid-template-columns:1fr
+      }
     }
     @media(max-width:700px) {
       .page-title {
         font-size:34px;
         margin-left:0
       }
-      .domain-panel {
-        margin-left:0;
-        padding:18px
+      .domain-grid,.usage-line {
+        margin-left:0
+      }
+      .field input {
+        font-size:17px
       }
     }
     </style>
@@ -81,7 +208,6 @@
           <a href="bulk.html"><i class="fa-solid fa-box-archive" aria-hidden="true"></i>Bulk Tools</a>
           <a href="domains.html" aria-current="page"><i class="fa-solid fa-globe" aria-hidden="true"></i>Custom Domains</a>
           <a href="teams.html"><i class="fa-solid fa-building" aria-hidden="true"></i>Team Management</a>
-          <a href="api.html"><i class="fa-solid fa-key" aria-hidden="true"></i>API Keys</a>
           <a href="logs.html"><i class="fa-solid fa-scroll" aria-hidden="true"></i>Logs</a>
         </nav>
         <div class="side-bottom"><form method="post" action="https://api.privo.fyi/cloud/auth/logout" id="logoutForm"><button class="logout" type="submit"><i class="fa-solid fa-right-from-bracket" aria-hidden="true"></i>Log Out</button></form>
@@ -91,10 +217,42 @@
       </aside>
       <main id="main">
         <h1 class="page-title">Custom Domains</h1>
-        <section class="panel domain-panel" aria-labelledby="domainStatus">
-          <h2 id="domainStatus"><i class="fa-solid fa-circle-info" aria-hidden="true"></i>Domain controls aren’t available yet</h2>
-          <p>The current Privo Cloud API doesn’t provide custom-domain management operations, so domains can’t be added, verified, or removed from this page. Your account’s domain allowance is shown below.</p>
-          <p class="usage" id="usage" aria-live="polite"><strong>Domains used:</strong> Loading…</p>
+        <p class="usage-line" id="usage" aria-live="polite"><strong>Domains used:</strong> Loading…</p>
+        <div class="domain-grid">
+          <section class="panel" aria-labelledby="addTitle">
+            <form id="addForm" novalidate>
+              <label class="label" id="addTitle" for="hostname">Add a domain</label>
+              <div class="panel-head field"><i class="fa-solid fa-globe" aria-hidden="true"></i><input id="hostname" type="text" autocomplete="off" spellcheck="false" placeholder="links.example.com" aria-describedby="addHint"></div>
+              <p class="hint" id="addHint">Use a subdomain you control, like links.example.com. You can’t use privo.fyi.</p>
+              <p class="form-error" id="addError" role="alert" hidden></p>
+              <button class="btn submit" id="addButton" type="submit">Add Domain</button>
+            </form>
+          </section>
+
+          <section class="panel" id="dnsPanel" aria-labelledby="dnsTitle" hidden>
+            <h2 class="label" id="dnsTitle" style="font-weight:400">Add this DNS record</h2>
+            <p class="hint" style="margin-top:0">Create this record where your domain’s DNS is managed. Privo checks it automatically, or you can press Check.</p>
+            <div class="dns-row"><span class="k">Type</span><code>CNAME</code><span></span></div>
+            <div class="dns-row"><span class="k">Name</span><code id="dnsName"></code><button class="btn small" type="button" data-copy="dnsName">Copy</button></div>
+            <div class="dns-row"><span class="k">Target</span><code id="dnsTarget">dns.privo.fyi</code><button class="btn small" type="button" data-copy="dnsTarget">Copy</button></div>
+          </section>
+        </div>
+
+        <section class="panel" style="margin:13px 0 0 9px" aria-labelledby="listTitle">
+          <h2 class="label" id="listTitle" style="font-weight:400">Your domains</h2>
+          <div class="table-wrap">
+            <table class="data-table domain-table">
+              <thead>
+                <tr>
+                  <th style="width:34%">Domain</th>
+                  <th style="width:20%">Status</th>
+                  <th style="width:26%">Added</th>
+                  <th style="width:20%">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="domainRows"></tbody>
+            </table>
+          </div>
         </section>
       </main>
     </div>
@@ -102,34 +260,210 @@
     <script src="/cloud/app/app.js"></script>
     <script>
     (() => {
-      const { API, $, showToast } = Privo;
+      const { API, $, showToast, formatTime } = Privo;
+
+      let domains = [];
+      let cnameTarget = "dns.privo.fyi";
+      let timer;
 
       Privo.loadMe();
 
-      fetch(API + "/api/cloud/dashboard", { credentials: "include", cache: "no-store" })
-        .then((res) => {
-          if (res.status === 401) {
-            window.location.replace("/cloud/signin");
-            return null;
+      function setError(message) {
+        const el = $("addError");
+        el.textContent = message;
+        el.hidden = !message;
+      }
+
+      function statusPill(d) {
+        if (d.verified) return ["Active", "pill ok"];
+        if (d.error) return ["Needs attention", "pill bad"];
+        return ["Waiting for DNS", "pill wait"];
+      }
+
+      function showDnsPanel(hostname) {
+        $("dnsName").textContent = hostname;
+        $("dnsTarget").textContent = cnameTarget;
+        $("dnsPanel").hidden = !hostname;
+      }
+
+      function render() {
+        const body = $("domainRows");
+        body.textContent = "";
+
+        if (!domains.length) {
+          const tr = document.createElement("tr");
+          const td = document.createElement("td");
+          td.className = "empty";
+          td.colSpan = 4;
+          td.textContent = "No custom domains yet.";
+          tr.append(td);
+          body.append(tr);
+          return;
+        }
+
+        for (const d of domains) {
+          const tr = document.createElement("tr");
+
+          const name = document.createElement("td");
+          name.textContent = d.hostname;
+
+          const state = document.createElement("td");
+          const [label, cls] = statusPill(d);
+          const pill = document.createElement("span");
+          pill.className = cls;
+          pill.textContent = label;
+          state.append(pill);
+          if (d.error) {
+            const note = document.createElement("div");
+            note.className = "hint";
+            note.textContent = d.error;
+            state.append(note);
           }
+
+          const added = document.createElement("td");
+          added.textContent = formatTime(d.modifiedAt);
+
+          const actions = document.createElement("td");
+          const wrap = document.createElement("div");
+          wrap.className = "actions";
+
+          if (!d.verified) {
+            const check = document.createElement("button");
+            check.className = "btn small";
+            check.type = "button";
+            check.textContent = "Check";
+            check.addEventListener("click", () => verify(d.id, check));
+            wrap.append(check);
+          }
+
+          const remove = document.createElement("button");
+          remove.className = "btn small danger";
+          remove.type = "button";
+          remove.textContent = "Remove";
+          remove.addEventListener("click", () => removeDomain(d));
+          wrap.append(remove);
+
+          actions.append(wrap);
+          tr.append(name, state, added, actions);
+          body.append(tr);
+        }
+      }
+
+      function renderUsage(u) {
+        const el = $("usage");
+        el.textContent = "";
+        const label = document.createElement("strong");
+        label.textContent = "Domains used:";
+        el.append(label, document.createTextNode(" " + (u.domains || 0) + " / " + (u.maxDomains || 10)));
+      }
+
+      // Keep checking every 30 seconds while any domain is still waiting on DNS.
+      function schedulePolling() {
+        clearTimeout(timer);
+        if (domains.some((d) => !d.verified && !d.error)) {
+          timer = setTimeout(() => refreshAll(), 30000);
+        }
+      }
+
+      async function refreshAll() {
+        try {
+          const res = await fetch(API + "/api/cloud/domains", { credentials: "include", cache: "no-store" });
+          if (res.status === 401) return window.location.replace("/cloud/signin");
           if (!res.ok) throw new Error("HTTP " + res.status);
-          return res.json();
-        })
-        .then((data) => {
-          if (!data) return;
-          const usage = data.usage || {};
-          $("usage").textContent = "";
-          const label = document.createElement("strong");
-          label.textContent = "Domains used:";
-          $("usage").append(label, document.createTextNode(
-            " " + (Number(usage.domains) || 0).toLocaleString() + " / " + (Number(usage.maxDomains) || 10)
-          ));
-        })
-        .catch(() => {
-          $("usage").classList.add("error");
-          $("usage").textContent = "Couldn’t load domain usage. Try refreshing.";
-          showToast("Couldn’t load your domain usage. Try refreshing.");
+          const data = await res.json();
+          domains = data.domains;
+          cnameTarget = data.cnameTarget || cnameTarget;
+          $("dnsTarget").textContent = cnameTarget;
+          renderUsage(data.usage);
+          render();
+          schedulePolling();
+        } catch (_) {
+          showToast("Couldn’t load your domains. Try refreshing.");
+        }
+      }
+
+      async function send(method, path, body) {
+        const res = await fetch(API + path, {
+          method,
+          credentials: "include",
+          headers: body ? { "Content-Type": "application/json" } : {},
+          body: body ? JSON.stringify(body) : undefined
         });
+        let data = {};
+        try { data = await res.json(); } catch (_) { /* empty */ }
+        return { res, data };
+      }
+
+      $("addForm").addEventListener("submit", async (event) => {
+        event.preventDefault();
+        setError("");
+
+        const hostname = $("hostname").value.trim();
+        if (!hostname) return setError("Enter a domain, like links.example.com.");
+
+        const button = $("addButton");
+        button.disabled = true;
+        button.textContent = "Adding…";
+
+        try {
+          const { res, data } = await send("POST", "/api/cloud/domains", { hostname });
+          if (res.status === 201) {
+            $("hostname").value = "";
+            cnameTarget = data.cnameTarget || cnameTarget;
+            showDnsPanel(data.hostname);
+            showToast(data.verified ? "Domain is active" : "Domain added. Create the DNS record to finish.");
+            await refreshAll();
+          } else {
+            setError(data.error || "Something went wrong. Try again.");
+          }
+        } catch (_) {
+          setError("Couldn’t reach Privo. Check your connection and try again.");
+        } finally {
+          button.disabled = false;
+          button.textContent = "Add Domain";
+        }
+      });
+
+      async function verify(id, button) {
+        button.disabled = true;
+        try {
+          const { res, data } = await send("POST", `/api/cloud/domains/${id}/verify`);
+          if (!res.ok) return showToast(data.error || "Couldn’t check that domain.");
+          showToast(data.verified ? "Domain is active" : "Still waiting for the DNS record");
+          await refreshAll();
+        } catch (_) {
+          showToast("Couldn’t reach Privo. Try again.");
+        } finally {
+          button.disabled = false;
+        }
+      }
+
+      async function removeDomain(d) {
+        const ok = window.confirm("Remove " + d.hostname + "? All of its links will be deleted too.");
+        if (!ok) return;
+        try {
+          const { res, data } = await send("DELETE", `/api/cloud/domains/${d.id}`);
+          if (!res.ok) return showToast(data.error || "Couldn’t remove that domain.");
+          showToast("Domain removed");
+          await refreshAll();
+        } catch (_) {
+          showToast("Couldn’t reach Privo. Try again.");
+        }
+      }
+
+      for (const button of document.querySelectorAll("[data-copy]")) {
+        button.addEventListener("click", async () => {
+          const text = $(button.dataset.copy).textContent;
+          try {
+            await navigator.clipboard.writeText(text);
+            showToast("Copied");
+          } catch (_) {
+            showToast("Couldn’t copy. Select the text instead.");
+          }
+        });
+      }
+
+      refreshAll();
     })();
     </script>
   </body>
