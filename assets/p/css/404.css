@@ -1,15 +1,15 @@
     :root {
-      --bg: #0e0a08;
-      --panel: #171009;
-      --panel-2: #1c1310;
-      --border: #2e2118;
-      --border-strong: #453322;
+      --bg: #140d08;
+      --panel: #1e150d;
+      --panel-2: #261a10;
+      --border: #3a2918;
+      --border-strong: #574026;
       --peach: #d4975c;
       --peach-hi: #e8c28a;
       --text: #f0e6da;
       --muted: #a8978a;
       --faint: #7a6a5e;
-      --black: #120c08;
+      --black: #160e08;
     }
 
     *,
@@ -34,8 +34,9 @@
       padding: 24px 16px;
 
       background:
-        radial-gradient(1200px 600px at 80% -10%, rgb(212 151 92 / 8%), transparent 60%),
-        var(--bg);
+        radial-gradient(1000px 520px at 78% -10%, rgb(212 151 92 / 14%), transparent 62%),
+        radial-gradient(900px 700px at -8% 110%, rgb(150 95 55 / 13%), transparent 62%),
+        linear-gradient(168deg, #1d1309 0%, var(--bg) 55%, #0e0906 100%);
       color: var(--text);
       font-family: "Inter", system-ui, sans-serif;
 
@@ -170,3 +171,13 @@
       font-size: 12px;
     }
   
+
+    /* Shared shell header inside the flex layout */
+    .page {
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      min-height: 100dvh;
+    }
+
+    .card { margin: auto; }

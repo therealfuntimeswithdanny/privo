@@ -3,7 +3,9 @@
 (() => {
   const headerHost = document.querySelector("[data-site-header]");
   const footerHost = document.querySelector("[data-site-footer]");
-  if (!headerHost || !footerHost) return;
+  if (!headerHost && !footerHost) return;
+
+if (headerHost) {
 
   const header = document.createElement("header");
   header.className = "header";
@@ -23,19 +25,29 @@
   nav.className = "nav";
   nav.setAttribute("aria-label", "Primary navigation");
 
-  const about = document.createElement("a");
-  about.href = "/p/about.html";
-  about.textContent = "About";
-  if (location.pathname.endsWith("/about.html")) about.setAttribute("aria-current", "page");
+  const links = [
+    { href: "/p/about", text: "About" },
+    { href: "/report", text: "Report a Link" },
+    { href: "/cloud", text: "Privo Cloud" },
+    { href: "/cloud/login", text: "Sign in", className: "signin" },
+  ];
 
-  const report = document.createElement("a");
-  report.href = "mailto:abuse@privo.fyi";
-  report.className = "signin";
-  report.textContent = "Report a Link";
-  nav.append(about, report);
+  for (const item of links) {
+    const a = document.createElement("a");
+    a.href = item.href;
+    a.textContent = item.text;
+    if (item.className) a.className = item.className;
+    if (location.pathname === item.href || location.pathname === item.href + ".html") {
+      a.setAttribute("aria-current", "page");
+    }
+    nav.append(a);
+  }
+
   header.append(brand, nav);
   headerHost.replaceWith(header);
+} /* end header */
 
+if (footerHost) {
   const footer = document.createElement("footer");
   footer.className = "footer";
 
@@ -83,4 +95,46 @@
   const footerBottom = document.createElement("div");
   footerBottom.className = "footer-bottom";
   footerHost.replaceWith(footer, footerBottom);
+} /* end footer */
+})();
+
+/* Dynamic header: compact on scroll, hamburger menu on small screens. */
+(() => {
+  const header = document.querySelector(".header");
+  const nav = document.querySelector(".header .nav");
+  if (!header || !nav) return;
+
+  const onScroll = () => header.classList.toggle("scrolled", window.scrollY > 12);
+  onScroll();
+  window.addEventListener("scroll", onScroll, { passive: true });
+
+  const toggle = document.createElement("button");
+  toggle.type = "button";
+  toggle.className = "nav-toggle";
+  toggle.setAttribute("aria-label", "Menu");
+  toggle.setAttribute("aria-expanded", "false");
+  toggle.innerHTML = '<i class="fa-solid fa-bars" aria-hidden="true"></i>';
+  header.append(toggle);
+
+  const setOpen = (open) => {
+    nav.classList.toggle("open", open);
+    toggle.setAttribute("aria-expanded", String(open));
+    toggle.innerHTML = open
+      ? '<i class="fa-solid fa-xmark" aria-hidden="true"></i>'
+      : '<i class="fa-solid fa-bars" aria-hidden="true"></i>';
+  };
+
+  toggle.addEventListener("click", () => setOpen(!nav.classList.contains("open")));
+
+  document.addEventListener("click", (e) => {
+    if (!header.contains(e.target)) setOpen(false);
+  });
+
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") setOpen(false);
+  });
+
+  nav.addEventListener("click", (e) => {
+    if (e.target.closest("a")) setOpen(false);
+  });
 })();

@@ -1,15 +1,15 @@
     :root {
-      --bg: #0e0a08;
-      --panel: #171009;
-      --panel-2: #1c1310;
-      --border: #2e2118;
-      --border-strong: #453322;
+      --bg: #140d08;
+      --panel: #1e150d;
+      --panel-2: #261a10;
+      --border: #3a2918;
+      --border-strong: #574026;
       --peach: #d4975c;
       --peach-hi: #e8c28a;
       --text: #f0e6da;
       --muted: #a8978a;
       --faint: #7a6a5e;
-      --black: #120c08;
+      --black: #160e08;
 
       --radius-card: 16px;
       --radius-btn: 10px;
@@ -33,8 +33,9 @@
       min-height: 100vh;
 
       background:
-        radial-gradient(1200px 600px at 80% -10%, rgb(212 151 92 / 8%), transparent 60%),
-        var(--bg);
+        radial-gradient(1000px 520px at 78% -10%, rgb(212 151 92 / 14%), transparent 62%),
+        radial-gradient(900px 700px at -8% 110%, rgb(150 95 55 / 13%), transparent 62%),
+        linear-gradient(168deg, #1d1309 0%, var(--bg) 55%, #0e0906 100%);
       color: var(--text);
       font-family: "Inter", system-ui, sans-serif;
 
@@ -351,35 +352,6 @@
 
     .maker-inner {
       padding: 26px;
-    }
-
-    .maker-top {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-
-      margin-bottom: 14px;
-    }
-
-    .maker-label {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-
-      color: var(--peach);
-
-      font: 600 11px/1 "Inter", system-ui, sans-serif;
-      letter-spacing: .1em;
-      text-transform: uppercase;
-    }
-
-    .maker-label i {
-      font-size: 12px;
-    }
-
-    .maker-domain {
-      color: var(--faint);
-      font: 500 11px/1 "Inter", system-ui, sans-serif;
     }
 
     textarea {
@@ -934,3 +906,311 @@
       }
     }
   
+
+    /* --------------------------------
+       Ambience & motion — bring back some life
+    -------------------------------- */
+
+    /* Two slow-drifting peach glows behind everything */
+    body::before {
+      content: "";
+      position: fixed;
+      inset: -20%;
+      z-index: -1;
+
+      background:
+        radial-gradient(600px 420px at 15% 20%, rgb(212 151 92 / 10%), transparent 65%),
+        radial-gradient(700px 500px at 85% 75%, rgb(184 122 69 / 9%), transparent 65%);
+
+      animation: drift 26s ease-in-out infinite alternate;
+      pointer-events: none;
+    }
+
+    @keyframes drift {
+      from { transform: translate3d(-2%, -1%, 0) scale(1); }
+      to   { transform: translate3d(2%, 2%, 0) scale(1.06); }
+    }
+
+    /* Entrance: hero copy rises in */
+    .hero-copy > * {
+      animation: rise .7s cubic-bezier(.2, .7, .3, 1) both;
+    }
+
+    .hero-copy h1     { animation-delay: .05s; }
+    .hero-copy .intro { animation-delay: .15s; }
+    .hero-copy .hero-actions { animation-delay: .25s; }
+
+    .header {
+      animation: rise .5s cubic-bezier(.2, .7, .3, 1) both;
+    }
+
+    .maker-section,
+    .strip,
+    .footer {
+      animation: rise .7s cubic-bezier(.2, .7, .3, 1) .15s both;
+    }
+
+    @keyframes rise {
+      from {
+        opacity: 0;
+        transform: translateY(18px);
+      }
+      to {
+        opacity: 1;
+        transform: none;
+      }
+    }
+
+    /* Playful arrow on the primary CTA */
+    .hero-cta--primary i {
+      animation: bob 1.6s ease-in-out infinite;
+    }
+
+    @keyframes bob {
+      0%, 100% { transform: translateY(0); }
+      50%      { transform: translateY(4px); }
+    }
+
+    /* Sheen sweep on primary buttons */
+    .hero-cta--primary,
+    .generate {
+      position: relative;
+      overflow: hidden;
+    }
+
+    .hero-cta--primary::after,
+    .generate::after {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: -80%;
+
+      width: 45%;
+      height: 100%;
+
+      background: linear-gradient(105deg, transparent, rgb(255 255 255 / 35%), transparent);
+      transform: skewX(-18deg);
+
+      transition: none;
+      pointer-events: none;
+    }
+
+    .hero-cta--primary:hover::after,
+    .generate:hover:not(:disabled)::after {
+      animation: sheen .7s ease;
+    }
+
+    @keyframes sheen {
+      from { left: -80%; }
+      to   { left: 130%; }
+    }
+
+    /* Generate button breathes gently until used */
+    .generate:not(:disabled) {
+      box-shadow: 0 0 0 0 rgb(212 151 92 / 45%);
+      animation: pulse 2.8s ease-out infinite;
+    }
+
+    @keyframes pulse {
+      0%   { box-shadow: 0 0 0 0 rgb(212 151 92 / 40%); }
+      70%  { box-shadow: 0 0 0 14px rgb(212 151 92 / 0%); }
+      100% { box-shadow: 0 0 0 0 rgb(212 151 92 / 0%); }
+    }
+
+    /* Cards come alive on hover */
+    .feature {
+      transition:
+        transform .22s ease,
+        border-color .22s ease,
+        background .22s ease,
+        box-shadow .22s ease;
+    }
+
+    .feature:hover {
+      transform: translateY(-4px);
+      border-color: var(--border-strong);
+      background: var(--panel-2);
+      box-shadow: 0 16px 40px rgb(0 0 0 / 35%);
+    }
+
+    .feature:hover .feature-icon {
+      background: rgb(212 151 92 / 20%);
+      transform: scale(1.08) rotate(-4deg);
+    }
+
+    .feature .feature-icon {
+      transition:
+        transform .22s ease,
+        background .22s ease;
+    }
+
+    /* The maker card glows while you're typing */
+    .maker:focus-within {
+      border-color: var(--border-strong);
+      box-shadow:
+        0 1px 0 rgb(255 255 255 / 4%) inset,
+        0 24px 60px rgb(0 0 0 / 40%),
+        0 0 0 4px rgb(212 151 92 / 12%);
+    }
+
+    .maker {
+      transition:
+        border-color .2s ease,
+        box-shadow .2s ease;
+    }
+
+    /* Result pops in with a little spring */
+    .result.visible {
+      animation: pop .35s cubic-bezier(.2, 1.4, .4, 1);
+    }
+
+    @keyframes pop {
+      from {
+        opacity: 0;
+        transform: scale(.96);
+      }
+      to {
+        opacity: 1;
+        transform: none;
+      }
+    }
+
+    /* Nav links get a tiny underline slide */
+    .nav a:not(.signin) {
+      position: relative;
+    }
+
+    .nav a:not(.signin)::after {
+      content: "";
+      position: absolute;
+      left: 12px;
+      right: 12px;
+      bottom: 5px;
+
+      height: 1px;
+
+      background: var(--peach);
+      transform: scaleX(0);
+      transform-origin: left;
+
+      transition: transform .2s ease;
+    }
+
+    .nav a:not(.signin):hover::after {
+      transform: scaleX(1);
+    }
+
+    /* Respect reduced motion for all the above */
+    @media (prefers-reduced-motion: reduce) {
+      body::before,
+      .hero-copy > *,
+      .header,
+      .maker-section,
+      .strip,
+      .footer,
+      .hero-cta--primary i,
+      .generate:not(:disabled),
+      .result.visible {
+        animation: none !important;
+      }
+
+      .hero-cta--primary::after,
+      .generate::after {
+        display: none;
+      }
+    }
+
+    /* --------------------------------
+       Dynamic header: sticky + compact on scroll + mobile menu
+    -------------------------------- */
+
+    .header {
+      position: sticky;
+      top: 14px;
+      z-index: 60;
+
+      transition:
+        padding .25s ease,
+        background .25s ease,
+        border-color .25s ease,
+        box-shadow .25s ease;
+    }
+
+    .header.scrolled {
+      padding: 9px 12px 9px 16px;
+
+      border-color: var(--border-strong);
+      background: rgb(23 16 9 / 92%);
+      box-shadow: 0 12px 32px rgb(0 0 0 / 40%);
+    }
+
+    .nav-toggle {
+      display: none;
+
+      width: 38px;
+      height: 38px;
+
+      border: 1px solid var(--border-strong);
+      border-radius: 8px;
+
+      background: rgb(255 255 255 / 3%);
+      color: var(--text);
+
+      font-size: 15px;
+      cursor: pointer;
+    }
+
+    .nav-toggle:hover {
+      border-color: var(--peach);
+      color: var(--peach);
+    }
+
+    @media (max-width: 640px) {
+      .nav-toggle {
+        display: grid;
+        place-items: center;
+      }
+
+      .nav {
+        position: absolute;
+        top: calc(100% + 8px);
+        left: 0;
+        right: 0;
+
+        flex-direction: column;
+        align-items: stretch;
+        gap: 4px;
+
+        padding: 8px;
+
+        border: 1px solid var(--border);
+        border-radius: 12px;
+
+        background: var(--panel-2);
+        box-shadow: 0 18px 40px rgb(0 0 0 / 45%);
+
+        opacity: 0;
+        transform: translateY(-6px);
+        pointer-events: none;
+
+        transition:
+          opacity .18s ease,
+          transform .18s ease;
+      }
+
+      .nav.open {
+        opacity: 1;
+        transform: none;
+        pointer-events: auto;
+      }
+
+      .nav a {
+        padding: 12px;
+        font-size: 13px;
+      }
+
+      .nav .signin {
+        margin-left: 0;
+        text-align: center;
+      }
+    }

@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="robots" content="noindex, nofollow">
   <meta name="referrer" content="no-referrer">
-  <meta name="theme-color" content="#0e0a08">
+  <meta name="theme-color" content="#140d08">
   <meta name="color-scheme" content="dark">
   <title>Report a link · Privo.fyi</title>
   <link rel="icon" type="image/x-icon" href="p/media/privo.svg">
@@ -13,14 +13,18 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@400;500;600&display=swap" rel="stylesheet">
   <script src="https://kit.fontawesome.com/8f1701cd51.js" crossorigin="anonymous" defer></script>
+  <link rel="stylesheet" href="/p/css/style.css">
   <link rel="stylesheet" href="/p/css/report.css">
+  <script src="/p/js/site-shell.js" defer></script>
 </head>
 <body>
+  <div class="page">
+  <div data-site-header></div>
   <main class="card">
     <h1>Report a link</h1>
     <p class="lede">
-      Seen a Privo link — or any link — that’s phishing, malware, spam or illegal?
-      Tell us and we’ll review it.
+      Found a Privo redirect that leads to phishing, malware or spam?
+      Report it and we’ll take a look.
     </p>
 
     <form id="report-form" novalidate>
@@ -56,6 +60,7 @@
 
     <a class="back" href="/">← Back to Privo</a>
   </main>
+  </div>
 
   <script>
     "use strict";
