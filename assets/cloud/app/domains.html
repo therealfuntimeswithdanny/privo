@@ -210,7 +210,7 @@
           <a href="teams.html"><i class="fa-solid fa-building" aria-hidden="true"></i>Team Management</a>
           <a href="logs.html"><i class="fa-solid fa-scroll" aria-hidden="true"></i>Logs</a>
         </nav>
-        <div class="side-bottom"><form method="post" action="https://api.privo.fyi/cloud/auth/logout" id="logoutForm"><button class="logout" type="submit"><i class="fa-solid fa-right-from-bracket" aria-hidden="true"></i>Log Out</button></form>
+        <div class="side-bottom"><form method="post" action="/cloud/auth/logout" id="logoutForm"><button class="logout" type="submit"><i class="fa-solid fa-right-from-bracket" aria-hidden="true"></i>Log Out</button></form>
           <div class="user-card"><img class="avatar" src="" alt="" referrerpolicy="no-referrer" hidden data-avatar><span class="name" data-name></span>
           </div>
         </div>
@@ -367,7 +367,7 @@
 
       async function refreshAll() {
         try {
-          const res = await fetch(API + "/api/cloud/domains", { credentials: "include", cache: "no-store" });
+          const res = await fetch(API + "/api/cloud/domains", { credentials: "same-origin", cache: "no-store" });
           if (res.status === 401) return window.location.replace("/cloud/login");
           if (!res.ok) throw new Error("HTTP " + res.status);
           const data = await res.json();
@@ -385,7 +385,7 @@
       async function send(method, path, body) {
         const res = await fetch(API + path, {
           method,
-          credentials: "include",
+          credentials: "same-origin",
           headers: body ? { "Content-Type": "application/json" } : {},
           body: body ? JSON.stringify(body) : undefined
         });

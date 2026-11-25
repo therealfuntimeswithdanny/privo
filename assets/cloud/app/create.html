@@ -321,7 +321,7 @@
           <a href="api.html"><i class="fa-solid fa-key" aria-hidden="true"></i>API Keys</a>
           <a href="logs.html"><i class="fa-solid fa-scroll" aria-hidden="true"></i>Logs</a>
         </nav>
-        <div class="side-bottom"><form method="post" action="https://api.privo.fyi/cloud/auth/logout" id="logoutForm"><button class="logout" type="submit"><i class="fa-solid fa-right-from-bracket" aria-hidden="true"></i>Log Out</button></form>
+        <div class="side-bottom"><form method="post" action="/cloud/auth/logout" id="logoutForm"><button class="logout" type="submit"><i class="fa-solid fa-right-from-bracket" aria-hidden="true"></i>Log Out</button></form>
           <div class="user-card"><img class="avatar" src="" alt="" referrerpolicy="no-referrer" hidden data-avatar><span class="name" data-name></span>
           </div>
         </div>
@@ -415,7 +415,7 @@
       async function loadCustomDomains() {
         try {
           const res = await fetch(API + "/api/cloud/domains", {
-            credentials: "include",
+            credentials: "same-origin",
             cache: "no-store"
           });
           if (res.status === 401) return;
@@ -523,7 +523,7 @@
         try {
           const res = await fetch(API + "/api/cloud/upload-image", {
             method: "POST",
-            credentials: "include",
+            credentials: "same-origin",
             body
           });
           let data = {};
@@ -602,7 +602,7 @@
 
           const res = await fetch(API + "/api/link", {
             method: "POST",
-            credentials: "include",
+            credentials: "same-origin",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(payload)
           });

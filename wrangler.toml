@@ -1,0 +1,42 @@
+name = "privo"
+main = "src/index.ts"
+compatibility_date = "2025-11-01"
+workers_dev = false
+
+# One domain. dns.privo.fyi stays only as the CNAME target customer
+# domains point at (Cloudflare for SaaS custom hostnames).
+routes = [
+  { pattern = "privo.fyi/*", zone_name = "privo.fyi" },
+  { pattern = "dns.privo.fyi/*", zone_name = "privo.fyi" }
+]
+
+# Static site (index.html, p/, cloud/, legal/, 404.html,
+# oauth-client-metadata.json) served straight from the Worker.
+[assets]
+directory = "./assets"
+binding = "ASSETS"
+not_found_handling = "404-page"
+# The worker always runs first: custom domains and shortcodes need routing
+# logic before any asset is served.
+run_worker_first = true
+
+[[d1_databases]]
+binding = "ACCOUNTS"
+database_name = "privo"
+database_id = "6dd61a4d-ff56-4ae8-92ba-fa0afba41e6a"
+migrations_dir = "migrations"
+
+[[r2_buckets]]
+binding = "IMAGES"
+bucket_name = "privo"
+jurisdiction = "eu"
+
+[triggers]
+crons = ["0 */12 * * *"]
+
+# Secrets (wrangler secret put ... or dashboard):
+#   GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET
+#   WEB_RISK_API_KEY
+#   CF_API_TOKEN
+# Vars (dashboard or [vars]):
+#   CF_ZONE_ID, RECHECK_BATCH

@@ -133,7 +133,7 @@
           <a href="api.html"><i class="fa-solid fa-key" aria-hidden="true"></i>API Keys</a>
           <a href="logs.html" aria-current="page"><i class="fa-solid fa-scroll" aria-hidden="true"></i>Logs</a>
         </nav>
-        <div class="side-bottom"><form method="post" action="https://api.privo.fyi/cloud/auth/logout" id="logoutForm"><button class="logout" type="submit"><i class="fa-solid fa-right-from-bracket" aria-hidden="true"></i>Log Out</button></form>
+        <div class="side-bottom"><form method="post" action="/cloud/auth/logout" id="logoutForm"><button class="logout" type="submit"><i class="fa-solid fa-right-from-bracket" aria-hidden="true"></i>Log Out</button></form>
           <div class="user-card"><img class="avatar" src="" alt="" referrerpolicy="no-referrer" hidden data-avatar><span class="name" data-name></span>
           </div>
         </div>
@@ -276,7 +276,7 @@
         if (q.length) url += "?" + q.join("&");
 
         try {
-          const res = await fetch(url, { credentials: "include", cache: "no-store" });
+          const res = await fetch(url, { credentials: "same-origin", cache: "no-store" });
 
           if (mine !== request) return;
 

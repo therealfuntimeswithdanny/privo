@@ -6,7 +6,7 @@
   "tos_uri": "https://privo.fyi/legal/terms",
   "policy_uri": "https://privo.fyi/legal/privacy",
   "redirect_uris": [
-    "https://api.privo.fyi/cloud/auth/atproto/callback"
+    "https://privo.fyi/cloud/auth/atproto/callback"
   ],
   "scope": "atproto include:cc.coffeencode.authPrivo repo:app.bsky.actor.profile?action=create&action=update",
   "grant_types": [

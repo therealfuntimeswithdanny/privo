@@ -1,0 +1,7 @@
+# Copy to .dev.vars for `wrangler dev` (never commit .dev.vars)
+GOOGLE_CLIENT_ID=
+GOOGLE_CLIENT_SECRET=
+WEB_RISK_API_KEY=
+CF_API_TOKEN=
+CF_ZONE_ID=
+# RECHECK_BATCH=40

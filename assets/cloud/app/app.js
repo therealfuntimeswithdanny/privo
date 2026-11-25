@@ -2,8 +2,8 @@
 window.Privo = (() => {
   "use strict";
 
-  // The Worker lives on api.privo.fyi; the session cookie goes with credentials: "include".
-  const API = "https://api.privo.fyi";
+  // Same origin as the pages now — the session cookie travels automatically.
+  const API = "";
 
   const $ = (id) => document.getElementById(id);
 
@@ -48,7 +48,7 @@ window.Privo = (() => {
     if (form) form.action = API + "/cloud/auth/logout";
 
     try {
-      const res = await fetch(API + "/api/me", { credentials: "include", cache: "no-store" });
+      const res = await fetch(API + "/api/me", { credentials: "same-origin", cache: "no-store" });
 
       if (res.status === 401) {
         window.location.replace("/cloud/login");

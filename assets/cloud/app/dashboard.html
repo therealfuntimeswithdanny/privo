@@ -25,7 +25,7 @@
           <a href="api.html"><i class="fa-solid fa-key" aria-hidden="true"></i>API Keys</a>
           <a href="logs.html"><i class="fa-solid fa-scroll" aria-hidden="true"></i>Logs</a>
         </nav>
-        <div class="side-bottom"><form method="post" action="https://api.privo.fyi/cloud/auth/logout" id="logoutForm"><button class="logout" type="submit"><i class="fa-solid fa-right-from-bracket" aria-hidden="true"></i>Log Out</button></form>
+        <div class="side-bottom"><form method="post" action="/cloud/auth/logout" id="logoutForm"><button class="logout" type="submit"><i class="fa-solid fa-right-from-bracket" aria-hidden="true"></i>Log Out</button></form>
           <div class="user-card"><img class="avatar" src="" alt="" referrerpolicy="no-referrer" hidden data-avatar><span class="name" data-name></span>
           </div>
         </div>
@@ -111,8 +111,8 @@
     "use strict";
 
     (() => {
-      // The Worker lives on api.privo.fyi; the session cookie is sent with credentials.
-      const API = "https://api.privo.fyi";
+      // Same origin as the pages — the session cookie travels automatically.
+      const API = "";
 
       const $ = (id) => document.getElementById(id);
       const toast = $("toast");
@@ -269,7 +269,7 @@
 
       /* ---------- load ---------- */
 
-      fetch(API + "/api/cloud/dashboard", { credentials: "include", cache: "no-store" })
+      fetch(API + "/api/cloud/dashboard", { credentials: "same-origin", cache: "no-store" })
         .then((res) => {
           if (res.status === 401) {
             window.location.replace("/cloud/login");
