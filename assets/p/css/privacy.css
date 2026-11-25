@@ -1,0 +1,120 @@
+    /* Privacy page specific styles */
+    .privacy-hero {
+      padding: 80px 12px 40px;
+    }
+
+    .privacy-hero h1 {
+      font-size: clamp(48px, 7vw, 84px);
+      line-height: .92;
+    }
+
+    .privacy-hero .updated {
+      margin-top: 18px;
+      color: var(--muted);
+      font: 400 13px/1.5 "Space Grotesk", system-ui, sans-serif;
+    }
+
+    .privacy-body {
+      max-width: 760px;
+      padding: 0 12px 100px;
+    }
+
+    .privacy-section {
+      margin-bottom: 44px;
+    }
+
+    .privacy-section h2 {
+      margin: 0 0 14px;
+      color: var(--cream);
+      font-size: 24px;
+      font-weight: 700;
+      letter-spacing: -.02em;
+    }
+
+    .privacy-section h3 {
+      margin: 22px 0 10px;
+      color: var(--peach);
+      font-size: 17px;
+      font-weight: 700;
+    }
+
+    .privacy-section p,
+    .privacy-section li {
+      color: var(--muted-strong);
+      font: 400 14px/1.7 "Space Grotesk", system-ui, sans-serif;
+    }
+
+    .privacy-section ul,
+    .privacy-section ol {
+      padding-left: 22px;
+      margin: 12px 0;
+    }
+
+    .privacy-section li {
+      margin-bottom: 8px;
+    }
+
+    .privacy-section li::marker {
+      color: var(--peach);
+    }
+
+    .privacy-section a {
+      color: var(--cream);
+      text-underline-offset: 3px;
+    }
+
+    .privacy-section strong {
+      color: var(--cream);
+      font-weight: 600;
+    }
+
+    .data-table {
+      width: 100%;
+      margin: 16px 0;
+      border-collapse: collapse;
+      font: 400 13px/1.5 "Space Grotesk", system-ui, sans-serif;
+    }
+
+    .data-table th,
+    .data-table td {
+      padding: 10px 12px;
+      text-align: left;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .data-table th {
+      color: var(--cream);
+      font-weight: 600;
+      font-size: 11px;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+    }
+
+    .data-table td {
+      color: var(--muted-strong);
+    }
+
+    .data-table td:first-child {
+      color: var(--peach);
+      font-weight: 500;
+    }
+
+    @media (max-width: 760px) {
+      .privacy-hero {
+        padding: 60px 4px 30px;
+      }
+      .privacy-body {
+        padding: 0 4px 70px;
+      }
+      .privacy-grid {
+        grid-template-columns: 1fr;
+      }
+      .data-table {
+        font-size: 12px;
+      }
+      .data-table th,
+      .data-table td {
+        padding: 8px 8px;
+      }
+    }
+  

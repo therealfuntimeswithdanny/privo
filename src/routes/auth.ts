@@ -25,6 +25,7 @@ import {
 import {
   finishAtprotoAuth,
   startAtprotoAuth,
+  startAtprotoCreate,
 } from "../atproto/oauth";
 
 const GOOGLE_AUTH_URL = "https://accounts.google.com/o/oauth2/v2/auth";
@@ -48,12 +49,13 @@ export async function handleAuth(request: Request, env: Env, url: URL): Promise<
   if (path === "/cloud/auth/google/callback" && isGet) return googleCallback(request, env, url);
 
   if (path === "/cloud/auth/bluesky" && isGet) return blueskyStart(request, env, url);
+  if (path === "/cloud/auth/create" && isGet) return atprotoCreate(request, env, url);
   if (path === "/cloud/auth/atproto/callback" && isGet) return atprotoCallback(request, env, url);
 
   if (path === "/cloud/auth/logout" && request.method === "POST") return logout(request, env, url);
 
   // Sign-in methods that aren't built yet get a friendly message.
-  if (isGet && /^\/cloud\/auth\/(create|coffee-and-code|github|apikey)$/.test(path)) {
+  if (isGet && /^\/cloud\/auth\/(coffee-and-code|github|apikey)$/.test(path)) {
     return authRedirect(url, "unavailable");
   }
 
@@ -218,6 +220,26 @@ async function blueskyStart(request: Request, env: Env, url: URL): Promise<Respo
   }
 
   const start = await startAtprotoAuth(handle);
+  if (typeof start === "string") {
+    return authRedirect(url, start);
+  }
+
+  return redirect(start.authorizeUrl, [
+    buildCookie(OAUTH_COOKIE, start.cookiePayload, {
+      maxAge: OAUTH_TTL_SECONDS,
+      path: "/cloud/auth",
+      secure: url.protocol === "https:",
+    }),
+  ]);
+}
+
+// "Create an Account" runs the same OAuth flow but starts at our own PDS's
+// authorization server (account.coffeencode.cc), which hosts the sign-up UI.
+// The scope's include:cc.coffeencode.authPrivo grants it.
+const CREATE_PDS = "https://account.coffeencode.cc";
+
+async function atprotoCreate(request: Request, env: Env, url: URL): Promise<Response> {
+  const start = await startAtprotoCreate(CREATE_PDS);
   if (typeof start === "string") {
     return authRedirect(url, start);
   }

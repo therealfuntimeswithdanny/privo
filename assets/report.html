@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="referrer" content="no-referrer">
+  <meta name="theme-color" content="#0e0a08">
+  <meta name="color-scheme" content="dark">
+  <title>Report a link · Privo.fyi</title>
+  <link rel="icon" type="image/x-icon" href="p/media/privo.svg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@400;500;600&display=swap" rel="stylesheet">
+  <script src="https://kit.fontawesome.com/8f1701cd51.js" crossorigin="anonymous" defer></script>
+  <link rel="stylesheet" href="/p/css/report.css">
+</head>
+<body>
+  <main class="card">
+    <h1>Report a link</h1>
+    <p class="lede">
+      Seen a Privo link — or any link — that’s phishing, malware, spam or illegal?
+      Tell us and we’ll review it.
+    </p>
+
+    <form id="report-form" novalidate>
+      <label for="url">The link you’re reporting</label>
+      <input id="url" name="url" type="url" required
+             placeholder="https://privo.fyi/abc123 or the destination itself"
+             autocomplete="off" spellcheck="false">
+
+      <label for="reason">What’s wrong with it?</label>
+      <select id="reason" name="reason">
+        <option value="phishing">Phishing / impersonation</option>
+        <option value="malware">Malware or unwanted software</option>
+        <option value="spam">Spam</option>
+        <option value="illegal">Illegal content</option>
+        <option value="other" selected>Something else</option>
+      </select>
+
+      <label for="details">Details <span class="hint">(optional)</span></label>
+      <textarea id="details" name="details" maxlength="2000"
+                placeholder="Where you saw it, what it does, anything helpful."></textarea>
+
+      <label for="contact">Your email or handle <span class="hint">(optional — only if you want a reply)</span></label>
+      <input id="contact" name="contact" type="text" maxlength="320"
+             placeholder="you@example.com" autocomplete="email">
+
+      <div class="hp" aria-hidden="true">
+        <label>Website <input name="website" type="text" tabindex="-1" autocomplete="off"></label>
+      </div>
+
+      <button type="submit" id="submit">Send report</button>
+      <p class="status" id="status" role="status" aria-live="polite"></p>
+    </form>
+
+    <a class="back" href="/">← Back to Privo</a>
+  </main>
+
+  <script>
+    "use strict";
+    const form = document.getElementById("report-form");
+    const status = document.getElementById("status");
+    const submit = document.getElementById("submit");
+
+    // Pre-fill the link when we arrived with ?url=…
+    const prefill = new URLSearchParams(location.search).get("url");
+    if (prefill) document.getElementById("url").value = prefill;
+
+    form.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      status.textContent = "";
+      status.className = "status";
+
+      const data = Object.fromEntries(new FormData(form).entries());
+      try {
+        new URL(data.url);
+      } catch {
+        status.textContent = "Enter a full link, starting with https://";
+        status.classList.add("err");
+        return;
+      }
+
+      submit.disabled = true;
+      submit.textContent = "Sending…";
+      try {
+        const res = await fetch("/api/report", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(data),
+        });
+        const out = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          status.textContent = out.error || "Something went wrong. Try again.";
+          status.classList.add("err");
+        } else {
+          form.reset();
+          status.textContent = "Thanks — your report is in. We review every one.";
+          status.classList.add("ok");
+        }
+      } catch {
+        status.textContent = "Couldn’t reach the server. Try again.";
+        status.classList.add("err");
+      } finally {
+        submit.disabled = false;
+        submit.textContent = "Send report";
+      }
+    });
+  </script>
+</body>
+</html>

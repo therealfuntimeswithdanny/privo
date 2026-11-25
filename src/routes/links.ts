@@ -6,6 +6,7 @@ import { checkSafety, checkSafetyCached } from "../lib/webrisk";
 import { fetchPageMeta, saveMeta } from "../lib/meta";
 import { cacheImageState, publicImage, uploadedImageKeyFromUrl } from "../lib/images";
 import { getSessionUser, type SessionUser } from "../lib/account";
+import { blockedHost } from "../lib/blocklist";
 
 const DOMAIN_RE = /^(?=.{1,253}$)(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/;
 const SHORTCODE_RE = /^[a-zA-Z0-9]{4,45}$/;
@@ -99,8 +100,12 @@ export async function createLink(request: Request, env: Env): Promise<Response> 
     if (seoErr) return seoErr;
     const hasCustomSeo = Object.values(customMeta!).some(Boolean);
 
-    // Safety check first: a flagged URL is refused before anything is
-    // stored or fetched from it.
+    // Safety checks first: blocklist and Web Risk are refused before
+    // anything is stored or fetched from the destination.
+    const blocked = await blockedHost(env, targetUrl);
+    if (blocked) {
+      return error("That destination is blocked and can't be shortened.", 422);
+    }
     const safety = await checkSafety(env, targetUrl);
     if (safety.status === "flagged") {
       return json(
@@ -330,6 +335,11 @@ export async function editLink(request: Request, env: Env, url: URL, shortcode: 
       }
     }
 
+    const blocked = await blockedHost(env, targetUrl);
+    if (blocked) {
+      return error("That destination is blocked and can't be used.", 422);
+    }
+
     const safety = await checkSafety(env, targetUrl);
     if (safety.status === "flagged") {
       return json(
@@ -401,6 +411,11 @@ export async function checkDestination(env: Env, ctx: ExecutionContext, url: URL
 
   if (!target || target.length > 2048 || !isValidUrl(target)) {
     return json({ error: "Invalid URL provided" }, { status: 400 });
+  }
+
+  // The admin blocklist wins over (and precedes) the cached Web Risk verdict.
+  if (await blockedHost(env, target)) {
+    return json({ status: "flagged", threats: ["BLOCKLIST"] });
   }
 
   const result = await checkSafetyCached(env, ctx, target);

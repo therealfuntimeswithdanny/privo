@@ -172,6 +172,19 @@ export async function startAtprotoAuth(handle: string): Promise<OAuthStart | Atp
   const pds = await pdsFromDid(did);
   if (!pds) return "no_pds";
 
+  return startWithPds(pds, { did, handle });
+}
+
+// Account creation: the PDS's own authorization server hosts the sign-up
+// UI — we just PAR into it with our client metadata, no handle needed.
+export async function startAtprotoCreate(pdsOrigin: string): Promise<OAuthStart | AtprotoError> {
+  return startWithPds(pdsOrigin, {});
+}
+
+async function startWithPds(
+  pds: string,
+  identity: { did?: string; handle?: string }
+): Promise<OAuthStart | AtprotoError> {
   const authServer = await authServerFromPds(pds);
   if (!authServer) return "no_auth_server";
 
@@ -191,8 +204,8 @@ export async function startAtprotoAuth(handle: string): Promise<OAuthStart | Atp
     state,
     code_challenge: challenge,
     code_challenge_method: "S256",
-    login_hint: handle,
   });
+  if (identity.handle) params.set("login_hint", identity.handle);
 
   const parRes = await dpopPost(dpop, parEndpoint, params, ATCLIENT_ID);
   if (!parRes.ok) {
@@ -204,7 +217,14 @@ export async function startAtprotoAuth(handle: string): Promise<OAuthStart | Atp
   if (!par.request_uri) return "par_failed";
 
   const cookiePayload = base64urlEncode(
-    JSON.stringify({ state, verifier, dpop: dpop.privateJwk, iss: authServer.issuer, did, handle })
+    JSON.stringify({
+      state,
+      verifier,
+      dpop: dpop.privateJwk,
+      iss: authServer.issuer,
+      did: identity.did ?? null,
+      handle: identity.handle ?? null,
+    })
   );
 
   const authorize = new URL(authServer.authorization_endpoint);
@@ -239,8 +259,8 @@ export async function finishAtprotoAuth(
     verifier: string;
     dpop: JsonWebKey;
     iss: string;
-    did: string;
-    handle: string;
+    did: string | null;
+    handle: string | null;
   }>(cookieValue);
   if (!saved || saved.state !== state) return "state_mismatch";
 
@@ -267,14 +287,18 @@ export async function finishAtprotoAuth(
   }
 
   const tokens = (await tokenRes.json()) as { access_token?: string; sub?: string };
-  if (!tokens.sub || tokens.sub !== saved.did) return "token_failed";
+  // `sub` is the DID the user authorized as — when we started with a
+  // known handle it must match; on the create flow it's brand new.
+  if (!tokens.sub || (saved.did && tokens.sub !== saved.did)) return "token_failed";
+  const did = tokens.sub;
 
   // Display name + avatar from the public API — no token needed.
+  let handle = saved.handle;
   let name: string | null = saved.handle;
   let picture: string | null = null;
   try {
     const profileRes = await fetch(
-      `https://public.api.bsky.app/xrpc/app.bsky.actor.getProfile?actor=${encodeURIComponent(saved.did)}`
+      `https://public.api.bsky.app/xrpc/app.bsky.actor.getProfile?actor=${encodeURIComponent(did)}`
     );
     if (profileRes.ok) {
       const profile = (await profileRes.json()) as {
@@ -283,13 +307,14 @@ export async function finishAtprotoAuth(
         avatar?: string;
       };
       name = profile.displayName || profile.handle || saved.handle;
+      handle = profile.handle || saved.handle;
       if (profile.avatar && profile.avatar.startsWith("https://")) picture = profile.avatar;
     }
   } catch {
-    // keep handle-only identity
+    // keep what we have
   }
 
-  return { did: saved.did, handle: saved.handle, name, picture };
+  return { did, handle: handle || did, name, picture };
 }
 
 async function authServerFromIssuer(iss: string): Promise<AuthServerMeta | null> {

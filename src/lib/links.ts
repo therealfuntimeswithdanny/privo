@@ -89,6 +89,7 @@ const THREAT_LABELS: Record<string, string> = {
   MALWARE: "malware",
   SOCIAL_ENGINEERING: "phishing or other social engineering",
   UNWANTED_SOFTWARE: "unwanted software",
+  BLOCKLIST: "being on Privo’s blocklist",
 };
 
 /** Shown instead of a redirect. Deliberately does not link to the destination. */

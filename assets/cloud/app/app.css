@@ -1,9 +1,16 @@
 /* Privo Cloud: shared styles for every page under /cloud/app (sidebar, panels, tables, toast). */
     :root {
-      --bg:#1c1310;
+      --bg:#0e0a08;
+      --panel:#171009;
+      --panel-2:#1c1310;
+      --border:#2e2118;
+      --border-strong:#453322;
       --peach:#d4975c;
-      --cream:#e8c28a;
-      --white:#fff;
+      --peach-hi:#e8c28a;
+      --text:#f0e6da;
+      --muted:#a8978a;
+      --faint:#7a6a5e;
+      --black:#120c08;
       --ink:#170f0c;
       --sidebar:clamp(220px,19vw,280px)
     }
@@ -16,8 +23,11 @@
       background:var(--bg)
     }
     body {
-      font-family:'Space Grotesk',sans-serif;
-      color:var(--peach);
+      font-family:'Inter',system-ui,sans-serif;
+      color:var(--text);
+      background:
+        radial-gradient(1200px 600px at 80% -10%, rgb(212 151 92 / 8%), transparent 60%),
+        var(--bg);
       -webkit-font-smoothing:antialiased
     }
     button,input {
@@ -34,9 +44,11 @@
       left:10px;
       top:10px;
       z-index:10;
-      background:white;
-      color:black;
-      padding:8px
+      background:var(--peach);
+      color:var(--black);
+      padding:8px;
+      border-radius:7px;
+      text-decoration:none
     }
     .app {
       min-height:100vh;
@@ -49,69 +61,73 @@
       min-height:0;
       position:sticky;
       top:0;
-      background:var(--peach);
-      color:var(--bg);
-      padding:8px 10px 12px;
+      background:linear-gradient(180deg,var(--panel-2),var(--panel));
+      border-right:1px solid var(--border);
+      color:var(--text);
+      padding:16px 12px;
       display:flex;
       flex-direction:column;
       overflow-y:auto;
       overscroll-behavior:contain
     }
     .brand {
-      font-size:38px;
+      font-family:'Space Grotesk',system-ui,sans-serif;
+      font-size:22px;
       line-height:1.25;
-      font-weight:400;
-      letter-spacing:-1.5px;
-      margin:0 0 10px;
-      white-space:nowrap
+      font-weight:600;
+      letter-spacing:-.01em;
+      margin:0 6px 16px;
+      white-space:nowrap;
+      color:var(--text)
     }
     .nav {
       display:flex;
       flex-direction:column;
-      gap:clamp(6px,.8vh,10px)
+      gap:4px
     }
     .nav a,.logout,.user-card {
-      min-height:45px;
-      border-radius:11px;
-      background:var(--bg);
-      color:white;
+      min-height:42px;
+      border-radius:9px;
+      background:transparent;
+      color:var(--muted);
       display:flex;
       align-items:center;
       text-decoration:none;
-      padding:0 10px;
+      padding:0 11px;
       gap:11px;
-      font-size:15px;
-      font-weight:400;
+      font-size:13px;
+      font-weight:500;
       line-height:1.2
     }
     .nav a {
       height:auto;
-      transition:background .15s,transform .15s
+      transition:background .15s,color .15s
     }
     .nav a:hover,.logout:hover {
-      background:#302019;
-      transform:translateX(2px)
+      background:rgb(212 151 92 / 10%);
+      color:var(--peach)
     }
     .nav a[aria-current=page] {
-      background:#302019
+      background:rgb(212 151 92 / 12%);
+      color:var(--peach)
     }
     .nav a:focus-visible,.logout:focus-visible {
-      outline:3px solid var(--cream);
+      outline:2px solid var(--peach);
       outline-offset:2px
     }
     .nav i {
-      width:29px;
-      flex:0 0 29px;
+      width:22px;
+      flex:0 0 22px;
       text-align:center;
       color:var(--peach);
-      font-size:27px
+      font-size:15px
     }
     .logout i {
-      width:29px;
-      flex:0 0 29px;
+      width:22px;
+      flex:0 0 22px;
       text-align:center;
       color:var(--peach);
-      font-size:30px
+      font-size:16px
     }
     .side-bottom {
       margin-top:auto
@@ -120,26 +136,27 @@
       width:100%;
       border:0;
       cursor:pointer;
-      margin-bottom:18px;
+      margin-bottom:12px;
       text-align:left
     }
-    .logout i {
-      font-size:35px
-    }
     .user-card {
-      height:55px;
-      padding:4px 7px;
-      gap:7px
+      height:auto;
+      min-height:48px;
+      padding:6px 9px;
+      gap:9px;
+      border:1px solid var(--border);
+      background:rgb(255 255 255 / 3%)
     }
     .avatar {
-      width:46px;
-      height:46px;
+      width:34px;
+      height:34px;
       object-fit:cover;
       border-radius:50%;
-      flex:0 0 46px
+      flex:0 0 34px
     }
     .user-card .name {
-      font-size:15px;
+      font-size:13px;
+      color:var(--text);
       white-space:nowrap;
       overflow:hidden;
       text-overflow:ellipsis
@@ -149,27 +166,30 @@
       padding:47px 6.8% 50px 4.0%
     }
     .welcome {
-      margin:0 0 10px
+      margin:0 0 14px
     }
     .welcome h1 {
-      font-weight:400;
-      font-size:40px;
+      font-family:'Space Grotesk',system-ui,sans-serif;
+      font-weight:600;
+      font-size:32px;
       line-height:1.12;
-      margin:0 0 0 0;
-      letter-spacing:.2px
+      margin:0;
+      letter-spacing:-.02em;
+      color:var(--text)
     }
     .welcome-person {
       display:flex;
       align-items:center;
       gap:8px;
-      margin-top:0;
-      font-size:24px;
-      line-height:1.2
+      margin-top:4px;
+      font-size:18px;
+      line-height:1.2;
+      color:var(--muted)
     }
     .welcome-person .avatar {
-      width:47px;
-      height:47px;
-      flex-basis:47px
+      width:32px;
+      height:32px;
+      flex-basis:32px
     }
     .welcome-person span {
       color:var(--peach)
@@ -181,30 +201,33 @@
       margin:0 0 12px 9px
     }
     .stat {
-      min-height:136px;
+      min-height:120px;
       min-width:0;
-      border-radius:11px;
-      background:linear-gradient(145deg,#dda36c 0%,var(--peach) 72%);
-      color:white;
-      padding:14px 16px;
+      border-radius:14px;
+      background:linear-gradient(180deg,var(--panel-2),var(--panel));
+      color:var(--text);
+      padding:16px 18px;
       display:flex;
       flex-direction:column;
       justify-content:space-between;
-      border:1px solid rgba(232,194,138,.45);
-      box-shadow:0 8px 20px rgba(0,0,0,.14)
+      border:1px solid var(--border);
+      box-shadow:0 1px 0 rgb(255 255 255 / 4%) inset
     }
     .stat h2 {
-      font-size:clamp(18px,1.55vw,23px);
-      font-weight:400;
+      font-size:13px;
+      font-weight:500;
       line-height:1.15;
-      margin:0 0 12px
+      margin:0 0 12px;
+      color:var(--muted)
     }
     .stat p {
-      font-size:clamp(28px,2.5vw,39px);
-      font-weight:400;
+      font-family:'Space Grotesk',system-ui,sans-serif;
+      font-size:clamp(26px,2.3vw,36px);
+      font-weight:600;
       line-height:1.05;
-      letter-spacing:-1px;
+      letter-spacing:-.02em;
       margin:0;
+      color:var(--peach);
       overflow-wrap:anywhere
     }
     .dashboard {
@@ -216,18 +239,19 @@
     }
     .panel {
       min-width:0;
-      background:var(--peach);
-      color:var(--ink);
-      border-radius:11px;
-      padding:12px 25px 0
+      background:linear-gradient(180deg,var(--panel-2),var(--panel));
+      border:1px solid var(--border);
+      color:var(--text);
+      border-radius:14px;
+      padding:14px 20px 10px;
+      box-shadow:0 1px 0 rgb(255 255 255 / 4%) inset
     }
     .links-panel {
       height:440px
     }
     .panel {
       display:flex;
-      flex-direction:column;
-      padding-bottom:10px
+      flex-direction:column
     }
     .panel .table-wrap {
       flex:1 1 auto;
@@ -237,12 +261,13 @@
     .data-table thead th {
       position:sticky;
       top:0;
-      background:var(--peach)
+      background:var(--panel-2)
     }
     .empty {
       text-align:center;
       padding:18px 8px !important;
-      border-right:0 !important
+      border-right:0 !important;
+      color:var(--faint)
     }
     .avatar[hidden] {
       display:none
@@ -258,28 +283,31 @@
     }
     .small-panel {
       height:214px;
-      padding:12px 25px 0
+      padding:12px 20px 10px
     }
     .panel-head {
-      height:45px;
-      border-radius:10px;
-      background:var(--bg);
-      color:white;
+      min-height:38px;
+      border-radius:9px;
+      background:transparent;
+      color:var(--text);
       display:flex;
       align-items:center;
-      gap:15px;
-      padding:0 10px;
-      margin:0 0 5px;
-      font-size:20px;
-      font-weight:400;
+      gap:11px;
+      padding:0;
+      margin:0 0 8px;
+      font-family:'Space Grotesk',system-ui,sans-serif;
+      font-size:15px;
+      font-weight:600;
       white-space:nowrap;
-      overflow:hidden
+      overflow:hidden;
+      border-bottom:1px solid var(--border);
+      padding-bottom:10px
     }
     .panel-head i {
-      font-size:39px;
+      font-size:16px;
       color:var(--peach);
-      width:35px;
-      flex:0 0 35px;
+      width:22px;
+      flex:0 0 22px;
       text-align:center
     }
     .panel-head span {
@@ -293,14 +321,16 @@
       width:100%;
       min-width:0;
       background:transparent;
-      color:white;
+      color:var(--text);
       border:0;
       outline:0;
-      font-size:20px;
+      font-family:'Inter',system-ui,sans-serif;
+      font-size:14px;
+      font-weight:400;
       padding:0
     }
     .search-head input::placeholder {
-      color:white;
+      color:var(--faint);
       opacity:1
     }
     .table-wrap {
@@ -311,23 +341,28 @@
       width:100%;
       border-collapse:collapse;
       table-layout:fixed;
-      color:var(--ink);
-      font-size:11px;
+      color:var(--text);
+      font-size:12px;
       text-align:left
     }
     .data-table th {
-      font-size:14px;
-      font-weight:400;
-      text-align:center;
-      padding:0 4px 3px;
-      border-bottom:1px solid var(--ink);
+      font-size:10px;
+      font-weight:600;
+      letter-spacing:.07em;
+      text-transform:uppercase;
+      text-align:left;
+      color:var(--muted);
+      padding:8px 6px;
+      border-bottom:1px solid var(--border);
       white-space:nowrap
     }
     .data-table td {
-      font-size:11px;
+      font-size:12px;
       vertical-align:top;
-      padding:7px 5px;
-      border-right:1px solid var(--ink);
+      color:var(--text);
+      padding:8px 6px;
+      border-right:0;
+      border-bottom:1px solid var(--border);
       overflow-wrap:anywhere
     }
     .data-table td:last-child,.data-table th:last-child {
@@ -343,11 +378,11 @@
       width:32%
     }
     .logs-table th,.domain-table th {
-      font-size:11px;
-      padding:0 3px 3px
+      font-size:10px;
+      padding:8px 4px
     }
     .logs-table td,.domain-table td {
-      font-size:10px
+      font-size:11px
     }
     .logs-table th:first-child {
       width:20%
@@ -368,29 +403,33 @@
       width:50%
     }
     .domain-table td {
-      padding-top:5px
+      padding-top:6px
     }
     .domain-table td:first-child {
-      text-align:center;
-      font-size:13px
+      text-align:left;
+      font-size:12px
     }
     .domain-table td:last-child {
-      text-align:center;
-      font-size:8px
+      text-align:right;
+      font-size:10px;
+      color:var(--faint)
     }
     .toast {
       position:fixed;
       right:18px;
       bottom:18px;
-      background:#302019;
-      color:var(--cream);
+      background:var(--panel-2);
+      border:1px solid var(--border-strong);
+      color:var(--text);
       padding:12px 16px;
-      border-radius:9px;
+      border-radius:10px;
+      font-size:13px;
       opacity:0;
       transform:translateY(8px);
       transition:.2s;
       pointer-events:none;
-      z-index:5
+      z-index:5;
+      box-shadow:0 12px 30px rgb(0 0 0 / 45%)
     }
     .toast.show {
       opacity:1;
@@ -405,7 +444,7 @@
         padding-right:28px
       }
       .brand {
-        font-size:33px
+        font-size:20px
       }
       .stats {
         grid-template-columns:repeat(2,minmax(0,1fr))
@@ -429,32 +468,31 @@
         height:auto;
         min-height:0;
         position:relative;
-        padding:10px 12px 12px;
-        overflow:visible
+        padding:12px 14px;
+        overflow:visible;
+        border-right:0;
+        border-bottom:1px solid var(--border)
       }
       .brand {
-        font-size:30px;
-        margin-bottom:10px
+        font-size:20px;
+        margin:0 0 12px
       }
       .nav {
         display:grid;
         grid-template-columns:repeat(2,minmax(0,1fr));
-        gap:7px;
+        gap:6px;
         padding-bottom:0
       }
       .nav a {
-        min-height:44px;
+        min-height:42px;
         padding:7px 9px;
         gap:8px;
-        font-size:13px
-      }
-      .nav a:hover,.logout:hover {
-        transform:none
+        font-size:12px
       }
       .nav i {
-        font-size:20px;
-        width:22px;
-        flex-basis:22px
+        font-size:14px;
+        width:18px;
+        flex-basis:18px
       }
       .side-bottom {
         display:grid;
@@ -464,37 +502,36 @@
         margin-top:10px
       }
       .logout {
-        min-height:44px;
+        min-height:42px;
         padding:0 9px;
         gap:7px;
         margin:0;
-        font-size:13px
+        font-size:12px
       }
       .logout i {
-        width:22px;
-        flex-basis:22px;
-        font-size:21px
+        width:18px;
+        flex-basis:18px;
+        font-size:15px
       }
       .user-card {
         min-width:0;
-        min-height:44px;
-        height:auto;
+        min-height:42px;
         padding:4px 7px;
         gap:7px
       }
       .user-card .avatar {
-        width:34px;
-        height:34px;
-        flex-basis:34px
+        width:30px;
+        height:30px;
+        flex-basis:30px
       }
       main {
         padding:25px 15px
       }
       .welcome h1 {
-        font-size:34px
+        font-size:26px
       }
       .welcome-person {
-        font-size:20px
+        font-size:16px
       }
       .stats,.dashboard {
         margin-left:0
@@ -503,14 +540,11 @@
         gap:9px
       }
       .stat {
-        height:105px;
-        padding:9px
-      }
-      .stat h2 {
-        font-size:17px
+        min-height:96px;
+        padding:12px
       }
       .stat p {
-        font-size:28px
+        font-size:24px
       }
       .dashboard {
         gap:12px
@@ -520,41 +554,41 @@
         padding-right:12px
       }
       .panel-head {
-        font-size:17px
+        font-size:14px
       }
       .panel-head i {
-        font-size:30px
+        font-size:15px
       }
 
     }
     @media(max-width:390px) {
       .nav {
-        gap:6px
+        gap:5px
       }
       .nav a {
         padding:7px;
         gap:6px;
-        font-size:12px
+        font-size:11px
       }
       .nav i {
-        width:20px;
-        flex-basis:20px;
-        font-size:18px
+        width:16px;
+        flex-basis:16px;
+        font-size:13px
       }
       .user-card .name {
-        font-size:13px
+        font-size:12px
       }
       .stats {
         grid-template-columns:repeat(2,minmax(0,1fr))
       }
       .stat p {
-        font-size:25px
+        font-size:20px
       }
       .panel-head {
-        font-size:15px
+        font-size:13px
       }
       .data-table th {
-        font-size:11px
+        font-size:9px
       }
 
     }

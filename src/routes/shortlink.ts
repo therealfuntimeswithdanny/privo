@@ -9,6 +9,7 @@ import type { Env } from "../env";
 import { backfill } from "../lib/meta";
 import { renderBlockedPage, renderLinkPage, type LinkRow } from "../lib/links";
 import { serveCachedImage, serveUploadedImage } from "../lib/images";
+import { blockedHost } from "../lib/blocklist";
 import { HOSTNAME_RE } from "./domains";
 
 const LINK_SELECT =
@@ -62,6 +63,16 @@ export async function serveMainHost(
 
     if (row.safety_status === "flagged") {
       return renderBlockedPage(shortcode, row, request.method === "HEAD");
+    }
+
+    // Admin blocklist is checked live — a link blocked after creation stops
+    // serving immediately.
+    if (await blockedHost(env, row.url)) {
+      return renderBlockedPage(
+        shortcode,
+        { ...row, safety_threats: '["BLOCKLIST"]' },
+        request.method === "HEAD"
+      );
     }
 
     // Links made before metadata/image caching existed get filled in once,
@@ -118,6 +129,14 @@ export async function serveCustomHost(
 
     if (row.safety_status === "flagged") {
       return renderBlockedPage(shortcode, row, request.method === "HEAD");
+    }
+
+    if (await blockedHost(env, row.url)) {
+      return renderBlockedPage(
+        shortcode,
+        { ...row, safety_threats: '["BLOCKLIST"]' },
+        request.method === "HEAD"
+      );
     }
 
     if (!row.meta_fetched_at || (row.image && !row.image_cached)) {

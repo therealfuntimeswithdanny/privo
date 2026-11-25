@@ -11,6 +11,8 @@ import { uploadImage } from "./routes/upload";
 import * as account from "./routes/account";
 import { handleDomains, recheckDomains } from "./routes/domains";
 import { handleAuth } from "./routes/auth";
+import { listReports, submitReport, updateReport } from "./routes/reports";
+import { addToBlocklist, listBlocklist, removeFromBlocklist } from "./routes/admin";
 import { serveCustomHost, serveMainHost } from "./routes/shortlink";
 
 const OWN_HOSTS = new Set(["privo.fyi", "dns.privo.fyi"]);
@@ -74,6 +76,28 @@ export default {
 
       if (pathname === "/api/check" && request.method === "GET") {
         return linksApi.checkDestination(env, ctx, url);
+      }
+
+      if (pathname === "/api/report" && request.method === "POST") {
+        return submitReport(request, env, url);
+      }
+
+      if (pathname === "/api/admin/reports" && request.method === "GET") {
+        return listReports(request, env, url);
+      }
+
+      if (pathname.startsWith("/api/admin/reports/") && request.method === "POST") {
+        return updateReport(request, env, url);
+      }
+
+      if (pathname === "/api/admin/blocklist" && request.method === "GET") {
+        return listBlocklist(request, env);
+      }
+      if (pathname === "/api/admin/blocklist" && request.method === "POST") {
+        return addToBlocklist(request, env, url);
+      }
+      if (pathname.startsWith("/api/admin/blocklist/") && request.method === "DELETE") {
+        return removeFromBlocklist(request, env, url);
       }
 
       return json({ error: "API endpoint not found" }, { status: 404 });

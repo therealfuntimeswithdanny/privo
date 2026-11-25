@@ -1,0 +1,182 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="theme-color" content="#0e0a08">
+  <meta name="color-scheme" content="dark">
+  <title>Reports · Privo Admin</title>
+  <link rel="icon" type="image/x-icon" href="/p/media/privo.svg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@400;500;600&display=swap" rel="stylesheet">
+  <script src="https://kit.fontawesome.com/8f1701cd51.js" crossorigin="anonymous" defer></script>
+  <link rel="stylesheet" href="/cloud/admin/reports.css">
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <a class="brand" href="/">privo.<em>fyi</em></a>
+      <nav>
+        <a href="/cloud/app/dashboard">Dashboard</a> ·
+        <a href="/cloud/login">Sign in</a>
+      </nav>
+    </header>
+
+    <h1>Abuse reports</h1>
+    <p class="sub">Signed in as <span id="who">…</span></p>
+
+    <div class="tabs" role="group" aria-label="Filter by status">
+      <button data-status="open" aria-pressed="true">Open</button>
+      <button data-status="resolved" aria-pressed="false">Resolved</button>
+      <button data-status="dismissed" aria-pressed="false">Dismissed</button>
+      <button data-status="all" aria-pressed="false">All</button>
+    </div>
+
+    <table>
+      <thead><tr>
+        <th>Link</th><th>Reason</th><th>Details / contact</th><th>Reported</th><th></th>
+      </tr></thead>
+      <tbody id="rows"></tbody>
+    </table>
+    <div class="empty" id="empty" hidden>No reports here.</div>
+    <button class="more" id="more" hidden>Load more</button>
+
+    <h2>Blocked destinations</h2>
+    <p class="sub">New links to these hosts are refused; existing links stop serving immediately.</p>
+
+    <form class="blockadd" id="block-form">
+      <input id="block-host" placeholder="evil.com or https://evil.com/page" required>
+      <input id="block-note" placeholder="Note (optional)">
+      <button type="submit">Block</button>
+    </form>
+
+    <table>
+      <thead><tr><th>Host</th><th>Note</th><th>Added</th><th></th></tr></thead>
+      <tbody id="blockrows"></tbody>
+    </table>
+    <div class="empty" id="blockempty" hidden>Nothing blocked.</div>
+
+    <p id="msg" role="status"></p>
+  </div>
+
+  <script>
+    "use strict";
+    const rows = document.getElementById("rows");
+    const empty = document.getElementById("empty");
+    const more = document.getElementById("more");
+    const msg = document.getElementById("msg");
+    let status = "open";
+    let next = null;
+
+    async function init() {
+      const me = await fetch("/api/me", { cache: "no-store" });
+      if (me.status === 401) { location.replace("/cloud/login"); return; }
+      const { user } = await me.json();
+      document.getElementById("who").textContent = user.name || user.email;
+      load(true);
+    }
+
+    function esc(s){ const d=document.createElement("div"); d.textContent=s??""; return d.innerHTML; }
+
+    async function load(fresh) {
+      if (fresh) { rows.innerHTML = ""; next = null; }
+      let url = "/api/admin/reports?status=" + status;
+      if (next) url += "&before=" + next;
+      const res = await fetch(url, { cache: "no-store" });
+      if (res.status === 401) { location.replace("/cloud/login"); return; }
+      if (res.status === 403) { msg.textContent = "This account can’t view reports."; return; }
+      const data = await res.json();
+      next = data.next;
+      more.hidden = !next;
+      empty.hidden = rows.children.length + data.reports.length > 0;
+      for (const r of data.reports) render(r);
+    }
+
+    function render(r) {
+      const tr = document.createElement("tr");
+      tr.dataset.id = r.id;
+      tr.innerHTML =
+        `<td class="url"><a href="${esc(r.url)}" target="_blank" rel="noopener noreferrer nofollow">${esc(r.url)}</a></td>` +
+        `<td><span class="reason">${esc(r.reason)}</span></td>` +
+        `<td class="details">${esc(r.details || "")}${r.contact ? "<br>✉ " + esc(r.contact) : ""}</td>` +
+        `<td class="when">${esc(r.createdAt)}</td>` +
+        `<td class="actions"></td>`;
+      const actions = tr.querySelector(".actions");
+      if (r.status !== "resolved") actions.append(btn("Resolve", () => act(r.id, "resolve", tr)));
+      if (r.status !== "dismissed") actions.append(btn("Dismiss", () => act(r.id, "dismiss", tr)));
+      if (r.status !== "open") actions.append(btn("Reopen", () => act(r.id, "reopen", tr)));
+      rows.append(tr);
+    }
+
+    function btn(label, fn) {
+      const b = document.createElement("button");
+      b.textContent = label; b.onclick = fn; return b;
+    }
+
+    async function act(id, action, tr) {
+      const res = await fetch(`/api/admin/reports/${id}/${action}`, { method: "POST" });
+      if (!res.ok) { msg.textContent = "Action failed — try again."; return; }
+      if (status !== "all") tr.remove();
+      else location.reload();
+      if (!rows.children.length) empty.hidden = false;
+    }
+
+    document.querySelectorAll(".tabs button").forEach(b => b.addEventListener("click", () => {
+      document.querySelectorAll(".tabs button").forEach(x => x.setAttribute("aria-pressed", "false"));
+      b.setAttribute("aria-pressed", "true");
+      status = b.dataset.status;
+      load(true);
+    }));
+    more.addEventListener("click", () => load(false));
+
+    // ---------- Blocklist ----------
+    const blockrows = document.getElementById("blockrows");
+    const blockempty = document.getElementById("blockempty");
+    const blockForm = document.getElementById("block-form");
+
+    async function loadBlocks() {
+      const res = await fetch("/api/admin/blocklist", { cache: "no-store" });
+      if (!res.ok) return;
+      const data = await res.json();
+      blockrows.innerHTML = "";
+      blockempty.hidden = data.hosts.length > 0;
+      for (const h of data.hosts) {
+        const tr = document.createElement("tr");
+        tr.innerHTML =
+          `<td class="url">${esc(h.host)}</td>` +
+          `<td class="details">${esc(h.note || "")}</td>` +
+          `<td class="when">${esc(h.createdAt)}</td>` +
+          `<td class="actions"></td>`;
+        const b = btn("Unblock", async () => {
+          const r = await fetch(`/api/admin/blocklist/${h.id}`, { method: "DELETE" });
+          if (r.ok) tr.remove(); else msg.textContent = "Unblock failed — try again.";
+          if (!blockrows.children.length) blockempty.hidden = false;
+        });
+        tr.querySelector(".actions").append(b);
+        blockrows.append(tr);
+      }
+    }
+
+    blockForm.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      msg.textContent = "";
+      const res = await fetch("/api/admin/blocklist", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          host: document.getElementById("block-host").value,
+          note: document.getElementById("block-note").value,
+        }),
+      });
+      const out = await res.json().catch(() => ({}));
+      if (!res.ok) { msg.textContent = out.error || "Couldn’t add that host."; return; }
+      blockForm.reset();
+      loadBlocks();
+    });
+
+    init().then(loadBlocks);
+  </script>
+</body>
+</html>

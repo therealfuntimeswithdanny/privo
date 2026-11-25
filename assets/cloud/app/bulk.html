@@ -3,140 +3,15 @@
   <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="theme-color" content="#1c1310">
+    <meta name="theme-color" content="#0e0a08">
     <meta name="robots" content="noindex, nofollow">
     <title>Privo Cloud — Bulk Tools</title>
     <script src="https://kit.fontawesome.com/8f1701cd51.js" crossorigin="anonymous" defer></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/cloud/app/app.css">
-    <style>
-    .page-title {
-      font-weight:400;
-      font-size:40px;
-      line-height:1.12;
-      margin:0 0 8px 9px;
-      letter-spacing:.2px
-    }
-    .page-intro {
-      margin:0 0 15px 9px;
-      font-size:15px
-    }
-    .bulk-grid {
-      display:grid;
-      grid-template-columns:minmax(0,1fr) minmax(0,1fr);
-      gap:13px;
-      margin-left:9px;
-      align-items:start
-    }
-    .bulk-grid .panel {
-      min-height:310px;
-      padding-bottom:18px
-    }
-    .label {
-      display:block;
-      font-size:15px;
-      margin:9px 0 6px
-    }
-    .hint {
-      font-size:13px;
-      line-height:1.45;
-      margin:8px 0 0
-    }
-    .bulk-input {
-      display:block;
-      width:100%;
-      min-height:240px;
-      resize:vertical;
-      border:0;
-      outline:0;
-      border-radius:10px;
-      background:var(--bg);
-      color:white;
-      padding:12px;
-      font-size:14px;
-      line-height:1.5
-    }
-    .bulk-input::placeholder {
-      color:white;
-      opacity:.65
-    }
-    .bulk-input:focus {
-      box-shadow:0 0 0 3px var(--cream)
-    }
-    .submit {
-      width:100%;
-      min-height:45px;
-      margin-top:14px;
-      border:0;
-      border-radius:10px;
-      background:var(--bg);
-      color:white;
-      font-size:17px;
-      cursor:pointer
-    }
-    .submit:hover {
-      background:#302019
-    }
-    .submit:disabled {
-      opacity:.6;
-      cursor:progress
-    }
-    .summary {
-      min-height:22px;
-      margin:0 0 8px;
-      font-size:14px
-    }
-    .results {
-      margin:0;
-      padding:0;
-      list-style:none
-    }
-    .results li {
-      display:grid;
-      grid-template-columns:minmax(0,1fr) auto;
-      gap:10px;
-      align-items:center;
-      padding:8px 0;
-      border-top:1px solid rgba(23,15,12,.35);
-      font-size:13px
-    }
-    .result-text {
-      min-width:0;
-      overflow-wrap:anywhere
-    }
-    .result-state {
-      font-weight:600;
-      white-space:nowrap
-    }
-    .result-state[data-status=created] {
-      color:#14542c
-    }
-    .result-state[data-status=failed] {
-      color:#5a1d12
-    }
-    .result-state[data-status=working] {
-      color:#4c3510
-    }
-    .results a {
-      color:var(--ink)
-    }
-    @media(max-width:1050px) {
-      .bulk-grid {
-        grid-template-columns:1fr
-      }
-    }
-    @media(max-width:700px) {
-      .page-title {
-        font-size:34px;
-        margin-left:0
-      }
-      .page-intro,.bulk-grid {
-        margin-left:0
-      }
-    }
-    </style>
+  <link rel="stylesheet" href="/cloud/app/bulk.css">
   </head>
   <body><a class="skip" href="#main">Skip to content</a>
     <div class="app">

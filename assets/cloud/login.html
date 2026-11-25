@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="description" content="Sign in to Privo Cloud: bulk editing, custom domains, custom SEO tags, teams and an API for your short links.">
   <meta name="robots" content="noindex, follow">
-  <meta name="theme-color" content="#1c1310">
+  <meta name="theme-color" content="#0e0a08">
   <meta name="color-scheme" content="dark">
   <link rel="canonical" href="https://privo.fyi/cloud/login">
   <title>Sign in — Privo Cloud</title>
@@ -17,474 +17,11 @@
   <meta property="og:url" content="https://privo.fyi/cloud/login">
   <link rel="icon" type="image/x-icon" href="https://danielmorrisey.com/media/images/seo/favicons/privo.svg">
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="icon" type="image/x-icon" href="p/media/privo.svg">
+  <link rel="icon" type="image/x-icon" href="/p/media/privo.svg">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400&family=Space+Grotesk:wght@400&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@400;500;600&display=swap" rel="stylesheet">
   <script src="https://kit.fontawesome.com/8f1701cd51.js" crossorigin="anonymous" defer></script>
-  <style>
-    /* Privo Cloud sign in — built from Figma "MacBook Air - 2" (Coffee & Code file, node 243:4) */
-
-    :root {
-      --bg: #1c1310;
-      --peach: #d4975c;
-      --cream: #e8c28a;
-      --black: #000;
-
-      --radius-btn: 10px;
-    }
-
-    *,
-    *::before,
-    *::after {
-      box-sizing: border-box;
-    }
-
-    html {
-      background: var(--bg);
-    }
-
-    body {
-      margin: 0;
-      min-height: 100vh;
-      min-height: 100dvh;
-
-      background: var(--bg);
-      color: var(--peach);
-      font-family: "Space Grotesk", system-ui, sans-serif;
-
-      text-rendering: optimizeLegibility;
-      -webkit-font-smoothing: antialiased;
-    }
-
-    ::selection {
-      background: var(--peach);
-      color: var(--bg);
-    }
-
-    a {
-      color: inherit;
-    }
-
-    a {
-      -webkit-tap-highlight-color: transparent;
-    }
-
-    :focus-visible {
-      outline: 3px solid var(--cream);
-      outline-offset: 3px;
-    }
-
-    .skip-link {
-      position: fixed;
-      z-index: 9999;
-      top: 12px;
-      left: 12px;
-
-      padding: 10px 14px;
-
-      border-radius: 7px;
-      background: var(--cream);
-      color: var(--bg);
-
-      font: 600 12px/1 "Inter", system-ui, sans-serif;
-      text-decoration: none;
-
-      transform: translateY(-150%);
-      transition: transform .18s ease;
-    }
-
-    .skip-link:focus {
-      transform: translateY(0);
-    }
-
-    /* --------------------------------
-       Layout: 440px feature panel + sign in
-    -------------------------------- */
-
-    .screen {
-      display: grid;
-      grid-template-columns: 440px minmax(0, 1fr);
-      min-height: 100vh;
-      min-height: 100dvh;
-    }
-
-    /* Let grid items shrink below their content's minimum width on small screens */
-    .features,
-    .signin,
-    .feature > div {
-      min-width: 0;
-    }
-
-    /* --------------------------------
-       Left: what you get with Privo Cloud
-    -------------------------------- */
-
-    .features {
-      padding: 60px 19px 40px;
-
-      background: var(--peach);
-      color: var(--black);
-    }
-
-    .features h2 {
-      display: grid;
-      place-items: center;
-
-      width: 401px;
-      max-width: 100%;
-      height: 100px;
-      margin: 0;
-
-      text-align: center;
-      font-size: 32px;
-      font-weight: 400;
-      line-height: normal;
-    }
-
-    .feature-list {
-      display: flex;
-      flex-direction: column;
-      gap: 28px;
-
-      margin: 40px 0 0;
-      padding: 0;
-
-      list-style: none;
-    }
-
-    .feature {
-      display: grid;
-      grid-template-columns: var(--icon-w, 86px) minmax(0, 322px);
-      column-gap: var(--icon-gap, 13px);
-      align-items: start;
-
-      min-height: 87px;
-    }
-
-    /* Font Awesome 7 gives icons a 1.25em box by default; pin to the glyph's own width */
-    .feature .feature-icon,
-    .btn .ico i {
-      width: auto;
-    }
-
-    .feature-icon {
-      font-size: 86px;
-      line-height: 1;
-    }
-
-    .feature h3 {
-      height: 43px;
-      margin: 0;
-
-      font-size: 48px;
-      font-weight: 400;
-      line-height: 43px;
-      white-space: nowrap;
-    }
-
-    .feature p {
-      display: flex;
-      align-items: center;
-
-      min-height: 48px;
-      margin: -5px 0 0;
-
-      font-size: 16px;
-      line-height: 21px;
-    }
-
-    .feature--teams {
-      --icon-w: 65px;
-      --icon-gap: 24px;
-    }
-
-    /* --------------------------------
-       Right: sign in
-    -------------------------------- */
-
-    .signin {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-
-      padding: 28px 20px 40px;
-    }
-
-    .signin h1 {
-      display: grid;
-      place-items: center;
-
-      width: 401px;
-      max-width: 100%;
-      height: 100px;
-      margin: 0;
-
-      color: var(--peach);
-      text-align: center;
-      font-size: 54px;
-      font-weight: 400;
-      line-height: normal;
-    }
-
-    .options {
-      display: flex;
-      flex-direction: column;
-
-      width: 394px;
-      max-width: 100%;
-      margin-top: 94px;
-    }
-
-    .options .group {
-      display: flex;
-      flex-direction: column;
-      gap: 25px;
-    }
-
-    .options hr {
-      width: 100%;
-      margin: 16px 0;
-
-      border: 0;
-      border-top: 1px solid var(--peach);
-    }
-
-    .btn {
-      --ico: 50px;
-
-      display: flex;
-      align-items: center;
-      gap: 18px;
-
-      height: 68.95px;
-      padding: 0 20px;
-
-      border-radius: var(--radius-btn);
-
-      background: var(--peach);
-      color: var(--black);
-
-      font: 400 16px/normal "Inter", system-ui, sans-serif;
-      text-decoration: none;
-
-      transition:
-        transform .18s ease,
-        background .18s ease;
-    }
-
-    .btn:hover {
-      transform: translateY(-1px);
-      background: var(--cream);
-    }
-
-    .btn:active {
-      transform: none;
-    }
-
-    .handle-dialog {
-      width: min(440px, calc(100% - 32px));
-      padding: 28px;
-
-      border: 1px solid var(--peach);
-      border-radius: var(--radius-btn);
-
-      background: var(--bg);
-      color: var(--peach);
-      font-family: "Space Grotesk", system-ui, sans-serif;
-    }
-
-    .handle-dialog::backdrop {
-      background: rgb(0 0 0 / 70%);
-    }
-
-    .handle-dialog h2 {
-      margin: 0 0 8px;
-      font-size: 24px;
-    }
-
-    .handle-dialog p {
-      margin: 0 0 20px;
-    }
-
-    .handle-dialog label {
-      display: block;
-      margin-bottom: 8px;
-    }
-
-    .handle-dialog input {
-      width: 100%;
-      min-height: 48px;
-      padding: 10px 12px;
-
-      border: 1px solid var(--peach);
-      border-radius: 6px;
-
-      background: var(--bg);
-      color: var(--peach);
-      font: 16px "Inter", system-ui, sans-serif;
-    }
-
-    .handle-dialog .dialog-error {
-      min-height: 1.5em;
-      margin: 12px 0 0;
-      color: #ffb3a7;
-    }
-
-    .handle-dialog .dialog-actions {
-      display: flex;
-      justify-content: flex-end;
-      gap: 12px;
-      margin-top: 16px;
-    }
-
-    .handle-dialog .dialog-actions button {
-      min-height: 44px;
-      padding: 0 16px;
-
-      border: 1px solid var(--peach);
-      border-radius: 6px;
-
-      background: var(--peach);
-      color: var(--black);
-      font: 400 15px "Inter", system-ui, sans-serif;
-      cursor: pointer;
-    }
-
-    .handle-dialog .dialog-actions button[type="button"] {
-      background: transparent;
-      color: var(--peach);
-    }
-
-    .handle-dialog button:disabled {
-      cursor: wait;
-      opacity: .7;
-    }
-
-    .btn .ico {
-      display: grid;
-      place-items: center;
-      flex: none;
-
-      width: 49px;
-      height: 50px;
-
-      font-size: var(--ico);
-      line-height: 1;
-    }
-
-    /* 576-wide glyphs scale down so every icon is about 49px wide, as in the design */
-    .btn--wide {
-      --ico: 43.6px;
-    }
-
-    .terms {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-
-      width: 392px;
-      max-width: 100%;
-      min-height: 48px;
-      margin: 6px 0 0;
-
-      text-align: center;
-      font-size: 16px;
-      line-height: normal;
-    }
-
-    .terms a {
-      text-underline-offset: 3px;
-    }
-
-    .terms a:hover {
-      color: var(--cream);
-    }
-
-    /* --------------------------------
-       Motion
-    -------------------------------- */
-
-    @media (prefers-reduced-motion: reduce) {
-      *,
-      *::before,
-      *::after {
-        animation-duration: .01ms !important;
-        animation-iteration-count: 1 !important;
-        transition-duration: .01ms !important;
-      }
-    }
-
-    /* --------------------------------
-       Responsive: sign in first, features below
-    -------------------------------- */
-
-    @media (max-width: 900px) {
-      .screen {
-        grid-template-columns: 1fr;
-        min-height: 0;
-      }
-
-      .signin {
-        order: -1;
-        padding-top: 32px;
-      }
-
-      .signin h1 {
-        height: auto;
-        padding: 12px 0;
-
-        font-size: 44px;
-      }
-
-      .options {
-        margin-top: 36px;
-      }
-
-      .features {
-        padding: 48px 24px 56px;
-      }
-
-      .features h2 {
-        width: 100%;
-        height: auto;
-        padding-bottom: 8px;
-      }
-
-      .feature-list {
-        margin-top: 24px;
-      }
-    }
-
-    @media (max-width: 480px) {
-      .feature {
-        grid-template-columns: var(--icon-w-sm, 64px) minmax(0, 1fr);
-        column-gap: 14px;
-      }
-
-      .feature--teams {
-        --icon-w-sm: 48px;
-      }
-
-      .feature-icon {
-        font-size: 64px;
-      }
-
-      .feature h3 {
-        height: auto;
-        font-size: 32px;
-        line-height: 1.1;
-        white-space: normal;
-      }
-
-      .feature p {
-        margin-top: 4px;
-      }
-
-      .signin h1 {
-        font-size: 38px;
-      }
-    }
-  </style>
+  <link rel="stylesheet" href="/cloud/login.css">
 </head>
 
 <body>
@@ -493,101 +30,96 @@
 
   <div class="screen">
 
-    <!-- Left: Privo Cloud features -->
+    <!-- Left: brand + features -->
     <aside class="features" aria-labelledby="features-title">
-      <h2 id="features-title">With Privo Cloud you can:</h2>
+      <a class="brand" href="/">
+        <span class="mark"><i class="fa-solid fa-link" aria-hidden="true"></i></span>
+        privo.<em>fyi</em>
+      </a>
 
-      <ul class="feature-list">
-        <li class="feature">
-          <i class="fa-solid fa-key feature-icon" aria-hidden="true"></i>
-          <div>
-            <h3>Simple API</h3>
-            <p>Build Privo into your app with<br>a simple API with unlimited usage</p>
-          </div>
-        </li>
+      <div class="pitch">
+        <h2 id="features-title">A privacy first link shortener with zero tracking</h2>
+        <p>Everything you need to shorten links at scale, with all the enterprise features for free.</p>
 
-        <li class="feature">
-          <i class="fa-solid fa-magnifying-glass feature-icon" aria-hidden="true"></i>
-          <div>
-            <h3>Bulk Editing</h3>
-            <p>Create links from CSV, bulk edit &amp; delete links on the fly</p>
-          </div>
-        </li>
+        <ul class="feature-list">
+          <li class="feature">
+            <span class="feature-icon"><i class="fa-solid fa-key" aria-hidden="true"></i></span>
+            <div>
+              <h3>Simple API</h3>
+              <p>Build Privo into your app with a simple API and unlimited usage.</p>
+            </div>
+          </li>
 
-        <li class="feature">
-          <i class="fa-solid fa-globe feature-icon" aria-hidden="true"></i>
-          <div>
-            <h3>Brand Links</h3>
-            <p>Take your links to the next level with unlimited Custom Domains</p>
-          </div>
-        </li>
+          <li class="feature">
+            <span class="feature-icon"><i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i></span>
+            <div>
+              <h3>Bulk Editing</h3>
+              <p>Create links from CSV, bulk edit &amp; delete on the fly.</p>
+            </div>
+          </li>
 
-        <li class="feature">
-          <i class="fa-solid fa-wand-magic-sparkles feature-icon" aria-hidden="true"></i>
-          <div>
-            <h3>Custom SEO</h3>
-            <p>Edit and customize Social SEO tags for your short links</p>
-          </div>
-        </li>
+          <li class="feature">
+            <span class="feature-icon"><i class="fa-solid fa-globe" aria-hidden="true"></i></span>
+            <div>
+              <h3>Brand Links</h3>
+              <p>Unlimited custom domains for your short links.</p>
+            </div>
+          </li>
 
-        <li class="feature feature--teams">
-          <i class="fa-solid fa-building feature-icon" aria-hidden="true"></i>
-          <div>
-            <h3>Teams &amp; Orgs</h3>
-            <p>Unlimited Teams and Organizations</p>
-          </div>
-        </li>
-      </ul>
+          <li class="feature">
+            <span class="feature-icon"><i class="fa-solid fa-building" aria-hidden="true"></i></span>
+            <div>
+              <h3>Teams &amp; Orgs</h3>
+              <p>Unlimited teams and organizations, built in.</p>
+            </div>
+          </li>
+        </ul>
+      </div>
+
+      <p class="foot">&copy; Privo.fyi by <a href="https://coffeencode.cc">Coffee &amp; Code</a></p>
     </aside>
 
     <!-- Right: sign in -->
     <main class="signin">
-      <h1 id="signin-title">Welcome Back!</h1>
-      <p id="auth-error" role="status" style="min-height:1.5em;margin:8px 0 0;color:#ffb3a7;" hidden></p>
+      <div class="card">
+        <span class="card-mark"><i class="fa-solid fa-link" aria-hidden="true"></i></span>
+        <h1 id="signin-title">Sign in to Privo Cloud</h1>
+        <p class="sub">Welcome back. Choose how you’d like to continue.</p>
 
-      <nav class="options" aria-label="Sign in options">
-        <a class="btn btn--wide" href="/cloud/auth/create" data-provider="create">
-          <span class="ico"><i class="fa-solid fa-user-plus" aria-hidden="true"></i></span>
-          Create an Account
-        </a>
+        <p id="auth-error" role="status" hidden></p>
 
-        <hr>
+        <nav class="options" aria-label="Sign in options">
+          <a class="btn btn--primary" href="/cloud/auth/create" data-provider="create">
+            <span class="ico"><i class="fa-solid fa-user-plus" aria-hidden="true"></i></span>
+            Create an account
+          </a>
 
-        <div class="group">
+          <div class="divider">or continue with</div>
+
           <a class="btn" href="/cloud/auth/google" data-provider="google">
             <span class="ico"><i class="fa-brands fa-google" aria-hidden="true"></i></span>
-            Sign in with Google
+            Continue with Google
           </a>
 
-          <a class="btn btn--wide" href="/cloud/auth/bluesky" data-provider="bluesky" id="bluesky-signin">
+          <a class="btn" href="/cloud/auth/bluesky" data-provider="bluesky" id="bluesky-signin">
             <span class="ico"><i class="fa-brands fa-bluesky" aria-hidden="true"></i></span>
-            Sign in with Bluesky
-          </a>
-
-          <a class="btn" href="/cloud/auth/github" data-provider="github">
-            <span class="ico"><i class="fa-brands fa-github" aria-hidden="true"></i></span>
-            Sign in with GitHub
+            Continue with Bluesky
           </a>
 
           <a class="btn" href="/cloud/auth/coffee-and-code" data-provider="coffee-and-code">
             <span class="ico"><i class="fa-solid fa-mug-hot" aria-hidden="true"></i></span>
-            Sign in with Coffee &amp; Code
+            Continue with Coffee &amp; Code
           </a>
+        </nav>
 
-          <a class="btn" href="/cloud/auth/apikey" data-provider="apikey">
-            <span class="ico"><i class="fa-solid fa-key" aria-hidden="true"></i></span>
-            Sign in with API Key
-          </a>
-        </div>
-      </nav>
-
-      <p class="terms">
-        <span>
-          By clicking Sign in you Agree to our
+        <p class="terms">
+          By signing in you agree to our
           <a href="/legal/privacy">Privacy Policy</a> and
-          <a href="/legal/terms">Terms of Service</a>
-        </span>
-      </p>
+          <a href="/legal/terms">Terms of Service</a>.
+        </p>
+      </div>
+
+      <p class="below">New to Privo? <a href="/cloud/auth/create">Create an account</a></p>
     </main>
 
   </div>
@@ -597,7 +129,13 @@
       <h2 id="bluesky-dialog-title">Sign in with Bluesky</h2>
       <p>Your internet handle/atproto handle is the handle (sometimes called username) you use to sign into Coffee & Code, Eurosky, Blacksky, Bluesky, pckt, and many, many more.</p>
       <label for="bluesky-handle">Your internet/atproto handle</label>
-      <input id="bluesky-handle" name="handle" type="text" autocomplete="username" autocapitalize="none" spellcheck="false" placeholder="you.bsky.social or yourname.com" required>
+      <div class="handle-field">
+        <input id="bluesky-handle" name="handle" type="text" role="combobox"
+               autocomplete="username" autocapitalize="none" spellcheck="false"
+               placeholder="you.bsky.social or yourname.com" required
+               aria-expanded="false" aria-autocomplete="list" aria-controls="bluesky-suggestions">
+        <ul class="handle-suggestions" id="bluesky-suggestions" role="listbox" aria-label="Account suggestions"></ul>
+      </div>
       <p class="dialog-error" id="bluesky-dialog-error" role="status" aria-live="polite"></p>
       <div class="dialog-actions">
         <button type="button" id="bluesky-dialog-cancel">Cancel</button>
@@ -624,6 +162,125 @@
 
     document.querySelector("#bluesky-dialog-cancel").addEventListener("click", () => {
       handleDialog.close();
+    });
+
+    // Handle typeahead, powered by typeahead.waow.tech (public, no auth).
+    const suggestions = document.querySelector("#bluesky-suggestions");
+    const TYPEAHEAD_URL = "https://typeahead.waow.tech/xrpc/tech.waow.typeahead.searchActors";
+    let suggestTimer = 0;
+    let suggestSeq = 0;
+    let activeIndex = -1;
+
+    function closeSuggestions() {
+      suggestions.innerHTML = "";
+      activeIndex = -1;
+      handleInput.setAttribute("aria-expanded", "false");
+    }
+
+    function pick(actor) {
+      handleInput.value = actor.handle;
+      closeSuggestions();
+      handleInput.focus();
+    }
+
+    function renderSuggestions(actors) {
+      suggestions.innerHTML = "";
+      activeIndex = -1;
+
+      if (!actors.length) {
+        const li = document.createElement("li");
+        li.className = "none";
+        li.textContent = "No accounts found — keep typing your full handle.";
+        suggestions.appendChild(li);
+      } else {
+        for (const actor of actors) {
+          const li = document.createElement("li");
+          li.setAttribute("role", "option");
+          li.id = "suggestion-" + actor.did.replace(/[^a-z0-9]/gi, "");
+
+          if (actor.avatar) {
+            const img = document.createElement("img");
+            img.src = actor.avatar;
+            img.alt = "";
+            img.loading = "lazy";
+            img.onerror = () => {
+              const fb = document.createElement("span");
+              fb.className = "avatar-fallback";
+              fb.innerHTML = '<i class="fa-solid fa-user" aria-hidden="true"></i>';
+              img.replaceWith(fb);
+            };
+            li.appendChild(img);
+          } else {
+            const fb = document.createElement("span");
+            fb.className = "avatar-fallback";
+            fb.innerHTML = '<i class="fa-solid fa-user" aria-hidden="true"></i>';
+            li.appendChild(fb);
+          }
+
+          const who = document.createElement("span");
+          who.className = "who";
+          const name = document.createElement("b");
+          name.textContent = actor.displayName || actor.handle;
+          const handle = document.createElement("span");
+          handle.textContent = "@" + actor.handle;
+          who.append(name, handle);
+          li.appendChild(who);
+
+          li.addEventListener("mousedown", (event) => {
+            // mousedown, not click: fires before the input loses focus.
+            event.preventDefault();
+            pick(actor);
+          });
+          suggestions.appendChild(li);
+        }
+      }
+      handleInput.setAttribute("aria-expanded", "true");
+    }
+
+    async function fetchSuggestions() {
+      const q = handleInput.value.trim().replace(/^@/, "");
+      if (q.length < 2) { closeSuggestions(); return; }
+
+      const seq = ++suggestSeq;
+      try {
+        const url = new URL(TYPEAHEAD_URL);
+        url.searchParams.set("q", q);
+        url.searchParams.set("limit", "5");
+        const res = await fetch(url, { headers: { "X-Client": "privo.fyi", Accept: "application/json" } });
+        if (!res.ok || seq !== suggestSeq) return;
+        const data = await res.json();
+        if (seq !== suggestSeq) return;
+        renderSuggestions(Array.isArray(data.actors) ? data.actors : []);
+      } catch {
+        // suggestions are a nicety — never break the dialog over them
+      }
+    }
+
+    handleInput.addEventListener("input", () => {
+      clearTimeout(suggestTimer);
+      suggestTimer = setTimeout(fetchSuggestions, 220);
+    });
+
+    handleInput.addEventListener("keydown", (event) => {
+      const items = [...suggestions.querySelectorAll('li[role="option"]')];
+      if (!items.length) return;
+
+      if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+        event.preventDefault();
+        activeIndex = (activeIndex + (event.key === "ArrowDown" ? 1 : -1) + items.length) % items.length;
+        items.forEach((li, i) => li.setAttribute("aria-selected", String(i === activeIndex)));
+        handleInput.setAttribute("aria-activedescendant", items[activeIndex].id);
+      } else if (event.key === "Enter" && activeIndex >= 0) {
+        event.preventDefault();
+        items[activeIndex].dispatchEvent(new MouseEvent("mousedown"));
+      } else if (event.key === "Escape") {
+        closeSuggestions();
+      }
+    });
+
+    handleInput.addEventListener("blur", () => {
+      // Delay so a mousedown on a suggestion lands first.
+      setTimeout(closeSuggestions, 120);
     });
 
     // Friendly message for ?error= codes the Worker sends back on failed sign-ins.

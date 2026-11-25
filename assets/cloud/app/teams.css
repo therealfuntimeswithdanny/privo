@@ -1,0 +1,57 @@
+    .page-title {
+      font-weight:400;
+      font-size:40px;
+      line-height:1.12;
+      margin:0 0 14px 9px;
+      letter-spacing:.2px
+    }
+    .team-panel {
+      max-width:860px;
+      min-height:260px;
+      margin-left:9px;
+      padding:22px 25px
+    }
+    .team-panel h2 {
+      display:flex;
+      align-items:center;
+      gap:12px;
+      font-size:22px;
+      font-weight:500;
+      margin:0 0 12px
+    }
+    .team-panel h2 i {
+      color:#7a4223
+    }
+    .team-panel p {
+      font-size:16px;
+      line-height:1.55;
+      margin:0 0 15px
+    }
+    .usage {
+      display:inline-flex;
+      align-items:center;
+      gap:7px;
+      border-radius:9px;
+      background:var(--bg);
+      color:white;
+      padding:10px 13px;
+      font-size:15px
+    }
+    .usage strong {
+      color:var(--cream);
+      font-weight:600
+    }
+    .error {
+      color:#5a1d12
+    }
+    @media(max-width:700px) {
+      .page-title {
+        font-size:34px;
+        margin-left:0
+      }
+      .team-panel {
+        margin-left:0;
+        padding:18px
+      }
+    }
+    

@@ -1,0 +1,40 @@
+    .page-title {
+      font-weight:400;
+      font-size:40px;
+      line-height:1.12;
+      margin:0 0 14px 9px;
+      letter-spacing:.2px
+    }
+    .api-panel {
+      max-width:860px;
+      min-height:260px;
+      margin-left:9px;
+      padding:22px 25px
+    }
+    .api-panel h2 {
+      display:flex;
+      align-items:center;
+      gap:12px;
+      font-size:22px;
+      font-weight:500;
+      margin:0 0 12px
+    }
+    .api-panel h2 i {
+      color:#7a4223
+    }
+    .api-panel p {
+      font-size:16px;
+      line-height:1.55;
+      margin:0 0 15px
+    }
+    @media(max-width:700px) {
+      .page-title {
+        font-size:34px;
+        margin-left:0
+      }
+      .api-panel {
+        margin-left:0;
+        padding:18px
+      }
+    }
+    

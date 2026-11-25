@@ -5,12 +5,15 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="robots" content="noindex, nofollow">
   <meta name="referrer" content="no-referrer">
-  <meta name="theme-color" content="#1c1310">
+  <meta name="theme-color" content="#0e0a08">
   <meta name="color-scheme" content="dark">
 
   <title>Before you continue · Privo.fyi</title>
 
   <link rel="icon" href="/p/media/privo.svg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/p/css/stop.css">
 </head>
 
@@ -30,7 +33,7 @@
 
     <p class="disclaimer" id="disclaimer" hidden>
       Only continue if you trust this destination.
-      <a id="report-inline" href="abuse.html">Report this link</a>
+      <a id="report-inline" href="/report">Report this link</a>
     </p>
 
     <noscript>
@@ -43,7 +46,7 @@
       </a>
 
       <p class="footer-links">
-        <a id="report-footer" href="abuse.html">Report a link</a>
+        <a id="report-footer" href="/report">Report a link</a>
         &middot;
         <a href="/legal/privacy">Privacy</a>
       </p>
@@ -89,7 +92,7 @@
       }
 
       function setReportLinks(url) {
-        const href = "abuse.html?url=" + encodeURIComponent(url);
+        const href = "/report?url=" + encodeURIComponent(url);
 
         $("report-inline").href = href;
         $("report-footer").href = href;

@@ -5,6 +5,8 @@ export interface Env {
   IMAGES: R2Bucket;
   /** Static site served by this Worker */
   ASSETS: Fetcher;
+  /** Abuse-report notification emails */
+  EMAIL?: SendEmail;
 
   GOOGLE_CLIENT_ID?: string;
   GOOGLE_CLIENT_SECRET?: string;

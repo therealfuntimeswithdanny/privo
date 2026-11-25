@@ -47,6 +47,17 @@ export async function createSession(env: Env, userId: string): Promise<{ token: 
   return { token, maxAge: SESSION_DAYS * 86400 };
 }
 
+/** The only account allowed to admin (reports, blocklist). */
+export const ADMIN_DID = "did:plc:l37td5yhxl2irrzrgvei4qay";
+
+/** Session user if signed in AND the admin DID, else a 401/403 Response. */
+export async function requireAdmin(request: Request, env: Env): Promise<SessionUser | Response> {
+  const user = await getSessionUser(request, env);
+  if (!user) return Response.json({ error: "Not signed in" }, { status: 401 });
+  if (user.id !== ADMIN_DID) return Response.json({ error: "Not authorized" }, { status: 403 });
+  return user;
+}
+
 export async function destroySession(request: Request, env: Env): Promise<void> {
   const token = getCookie(request, SESSION_COOKIE);
   if (token && env.ACCOUNTS) {

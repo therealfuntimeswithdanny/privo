@@ -4,28 +4,28 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="description"content="A simple link shortener without any tracking. Free for life. No account needed.">
-  <meta name="keywords"content="URL shortener, private URL shortener, privacy focused URL shortener, no tracking links, anonymous link shortener, Privo">
+  <meta name="description" content="A private link shortener with a safety check on every link. No tracking, no account needed — free for life.">
+  <meta name="keywords" content="URL shortener, private URL shortener, privacy focused URL shortener, no tracking links, anonymous link shortener, safe links, Privo">
   <meta name="author" content="Privo">
   <meta name="robots" content="index, follow, max-image-preview:large">
   <meta name="googlebot" content="index, follow">
-  <meta name="theme-color" content="#1c1310">
+  <meta name="theme-color" content="#0e0a08">
   <meta name="color-scheme" content="dark">
   <link rel="canonical" href="https://privo.fyi/">
-  <title>Privo.fyi</title>
+  <title>Privo — Safe, private link shortener</title>
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="Privo">
-  <meta property="og:title" content="Privo.fyi">
-  <meta property="og:description" content="A simple link shortener without any tracking. Free for life. No account needed.">
+  <meta property="og:title" content="Privo — Safe, private link shortener">
+  <meta property="og:description" content="A private link shortener with a safety check on every link. No tracking, no account needed — free for life.">
   <meta property="og:url" content="https://privo.fyi/">
   <meta property="og:locale" content="en_US">
   <link rel="icon" type="image/x-icon" href="p/media/privo.svg">
-  <meta property="og:image" content="p/media/image.png">
+  <meta property="og:image" content="https://privo.fyi/p/media/image.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@400;500;600&display=swap" rel="stylesheet">
   <script src="https://kit.fontawesome.com/8f1701cd51.js" crossorigin="anonymous" defer></script>
-  <link href="p/css/style.css" rel="stylesheet">
+  <link rel="stylesheet" href="/p/css/home.css">
 </head>
 
 <body>
@@ -39,12 +39,15 @@
 <header class="header">
 
   <a href="/" class="brand" aria-label="Privo home">
-    privo.<em><i>fyi</i></em>
+    <span class="mark"><i class="fa-solid fa-link" aria-hidden="true"></i></span>
+    privo.<em>fyi</em>
   </a>
 
   <nav class="nav" aria-label="Primary navigation">
     <a href="p/about.html">About</a>
-    <a href="mailto:abuse@privo.fyi" class="signin">Report a Link</a>
+    <a href="/report">Report a Link</a>
+    <a href="/cloud">Privo Cloud</a>
+    <a href="/cloud/login" class="signin">Sign in</a>
   </nav>
 
 </header>
@@ -56,24 +59,23 @@
 
     <div class="hero-copy">
 
-      <div class="eyebrow">
-        <i class="fa-brands fa-cloudflare" aria-hidden="true"></i>
-        Powered by Cloudflare
-      </div>
-
       <h1 id="hero-title">
         <span class="first">Shorten links.</span>
         <span class="second">No tracking.</span>
       </h1>
 
       <p class="intro">
-        A simple link shortener that just works.<br>
-        Unlimited links. No account required.
+        A link shortener with no tracking with privacy put first.
+        <br>
+        Unlimited links. No tracking. No account required.
       </p>
 
       <div class="hero-actions">
-        <a href="#create" class="hero-cta">
-          Shorten a link <i class="fa-solid fa-arrow-down fa-bounce"></i>
+        <a href="#create" class="hero-cta hero-cta--primary">
+          Shorten a link <i class="fa-solid fa-arrow-down"></i>
+        </a>
+        <a href="/cloud" class="hero-cta hero-cta--ghost">
+          Explore Privo Cloud <i class="fa-solid fa-arrow-right"></i>
         </a>
       </div>
 
@@ -92,9 +94,11 @@
 
       <div class="section-heading-left">
         <h2 id="create-title">
-          Shorten a link.
+          Shorten a link
         </h2>
-
+        <p class="section-sub">
+          Paste a long URL, optionally pick a custom shortcode, and get a safe, private link back.
+        </p>
       </div>
 
     </div>
@@ -110,7 +114,8 @@
         <div class="maker-top">
 
           <span class="maker-label">
-            Shorten <i>anything</i>
+            <i class="fa-solid fa-wand-magic-sparkles" aria-hidden="true"></i>
+            Link generator
           </span>
 
           <span class="maker-domain">
@@ -184,20 +189,20 @@
             Custom shortcode
           </label>
 
-<input
-  id="shortcode"
-  name="shortcode"
-  class="custom-code-input"
-  type="text"
-  minlength="4"
-  maxlength="45"
-  autocomplete="off"
-  autocapitalize="none"
-  spellcheck="false"
-  placeholder="e.g. mydocs"
-  pattern="[A-Za-z0-9]+"
-  aria-describedby="shortcode-help"
->
+          <input
+            id="shortcode"
+            name="shortcode"
+            class="custom-code-input"
+            type="text"
+            minlength="4"
+            maxlength="45"
+            autocomplete="off"
+            autocapitalize="none"
+            spellcheck="false"
+            placeholder="e.g. mydocs"
+            pattern="[A-Za-z0-9]+"
+            aria-describedby="shortcode-help"
+          >
 
           <p
             class="custom-code-help"
@@ -222,9 +227,7 @@
         </div>
 
         <p class="hint" id="url-help">
-          <strong>
-            Please make sure your link does not violate our <a href="/legal/terms">Terms of Service</a>.
-          </strong>
+          Please make sure your link does not violate our <a href="/legal/terms">Terms of Service</a>.
         </p>
 
         <!-- Result -->
@@ -282,23 +285,26 @@
   >
 
     <div class="feature">
+      <span class="feature-icon"><i class="fa-solid fa-shield-halved" aria-hidden="true"></i></span>
+      <strong>Every link, safety checked</strong>
+      <span>
+        Each link is screened against Google Web Risk, and visitors see a warning page before they’re sent anywhere.
+      </span>
+    </div>
+
+    <div class="feature">
+      <span class="feature-icon"><i class="fa-solid fa-user-secret" aria-hidden="true"></i></span>
       <strong>Zero tracking</strong>
       <span>
-        No click analytics or device fingerprinting just a redirect
+        No click analytics, no fingerprinting, no IPs logged — just a redirect.
       </span>
     </div>
 
     <div class="feature">
-      <strong>Unlimited Links</strong>
+      <span class="feature-icon"><i class="fa-solid fa-cloud" aria-hidden="true"></i></span>
+      <strong>Free Privo Cloud</strong>
       <span>
-        Create unlimied short links for free forever
-      </span>
-    </div>
-
-    <div class="feature">
-      <strong>Fast & Reliable</strong>
-      <span>
-        Privo is supercharged by the Cloudflare Developer platform resulting in fast response times and a reliable service
+        Sign in for custom domains, bulk tools, and custom SEO on every link — <a href="/cloud">free with Privo Cloud</a>.
       </span>
     </div>
 
@@ -313,18 +319,16 @@
       privo.<em>fyi</em>
     </div>
     <p class="footer-copy">
-        <i class="fa-regular fa-copyright"></i> <span id="year"></span> <a href="p/stop.html?url=https://coffeencode.cc&viaPrivo=true">Coffee & Code</a>
+        <i class="fa-regular fa-copyright"></i> <span id="year"></span> <a href="https://coffeencode.cc">Coffee &amp; Code</a>
     <br>
-        Contact suport via Email <a href="mailto:support@privo.fyi">support@privo.fyi</a> Report Abuse via email <a href="mailto:abuse@privo.fyi">abuse@privo.fyi</a>
+        Contact support via email <a href="mailto:support@privo.fyi">support@privo.fyi</a> · Report abuse <a href="mailto:abuse@privo.fyi">abuse@privo.fyi</a>
     </p>
   </div>
-  <div class ="footer-links">
+  <div class="footer-links">
       <a href="/legal/terms">Terms of Service</a>
       <a href="/legal/privacy">Privacy Policy</a>
   </div>
 </footer>
-
-<div class="footer-bottom"></div>
 
   </div>
 
