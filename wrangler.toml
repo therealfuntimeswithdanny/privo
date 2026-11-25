@@ -10,6 +10,17 @@ routes = [
   { pattern = "dns.privo.fyi/*", zone_name = "privo.fyi" }
 ]
 
+# Cloudflare Email Sending — abuse report notifications.
+# The destination address must be verified under Email Routing.
+# Must stay above the first table header or it nests into that table.
+send_email = [
+  { name = "EMAIL", destination_address = "danny@danielmorrisey.com" }
+]
+
+# Cloudflare for SaaS custom hostnames — needed by /api/cloud/domains.
+[vars]
+CF_ZONE_ID = "29997300a32de7ec00b296070b9867b2"
+
 # Static site (index.html, p/, cloud/, legal/, 404.html,
 # oauth-client-metadata.json) served straight from the Worker.
 [assets]
@@ -31,14 +42,12 @@ binding = "IMAGES"
 bucket_name = "privo"
 jurisdiction = "eu"
 
-# Cloudflare Email Sending — abuse report notifications.
-# The destination address must be verified under Email Routing.
-send_email = [
-  { name = "EMAIL", destination_address = "danny@danielmorrisey.com" }
-]
-
 [triggers]
 crons = ["0 */12 * * *"]
+
+[observability.logs]
+enabled = true
+invocation_logs = true
 
 # Secrets (wrangler secret put ... or dashboard):
 #   GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET
