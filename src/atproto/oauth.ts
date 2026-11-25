@@ -312,7 +312,10 @@ export async function finishAtprotoAuth(
       };
       name = profile.displayName || profile.handle || saved.handle;
       handle = profile.handle || saved.handle;
-      if (profile.avatar && profile.avatar.startsWith("https://")) picture = profile.avatar;
+      // Serve avatars via our own CDN — same paths, different host.
+      if (profile.avatar && profile.avatar.startsWith("https://")) {
+        picture = profile.avatar.replace("https://cdn.bsky.app", "https://cdn.coffeencode.cc");
+      }
     }
   } catch {
     // keep what we have

@@ -106,7 +106,7 @@
       color:#4c3510
     }
     .results a {
-      color:var(--ink)
+      color:var(--peach)
     }
     @media(max-width:1050px) {
       .bulk-grid {

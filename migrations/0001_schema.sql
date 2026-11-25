@@ -138,8 +138,8 @@ CREATE TABLE IF NOT EXISTS usage (
   d1_writes    INTEGER NOT NULL DEFAULT 0,
   max_teams    INTEGER NOT NULL DEFAULT 10,
   max_domains  INTEGER NOT NULL DEFAULT 10,
-  max_r2_bytes INTEGER NOT NULL DEFAULT 1073741824,
-  max_d1_bytes INTEGER NOT NULL DEFAULT 314572800
+  max_r2_bytes INTEGER NOT NULL DEFAULT 2147483648,
+  max_d1_bytes INTEGER NOT NULL DEFAULT 104857600
 );
 
 -- Usage + audit triggers (kept verbatim from the live schema).

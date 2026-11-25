@@ -115,6 +115,10 @@ export default {
         return account.logs(request, env, url);
       }
 
+      if (pathname === "/api/cloud/logs/clear" && request.method === "POST") {
+        return account.clearLogs(request, env, url);
+      }
+
       if (pathname === "/api/check" && request.method === "GET") {
         return linksApi.checkDestination(env, ctx, url);
       }

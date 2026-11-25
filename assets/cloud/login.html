@@ -200,7 +200,8 @@
 
           if (actor.avatar) {
             const img = document.createElement("img");
-            img.src = actor.avatar;
+            // Serve avatars via our own CDN — same paths, different host.
+            img.src = String(actor.avatar).replace("https://cdn.bsky.app", "https://cdn.coffeencode.cc");
             img.alt = "";
             img.loading = "lazy";
             img.onerror = () => {

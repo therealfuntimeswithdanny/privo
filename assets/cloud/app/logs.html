@@ -42,6 +42,7 @@
             <button class="chip" type="button" data-category="link" aria-pressed="false">Links</button>
             <button class="chip" type="button" data-category="r2" aria-pressed="false">Files</button>
             <button class="chip" type="button" data-category="d1" aria-pressed="false">Database</button>
+            <button class="chip chip-danger" type="button" id="clearLogs" title="Delete all of your log entries"><i class="fa-solid fa-trash-can" aria-hidden="true"></i> Clear logs</button>
           </div>
           <div class="table-wrap">
             <table class="data-table logs-table">
@@ -201,6 +202,20 @@
 
       $("logSearch").addEventListener("input", applySearch);
       $("more").addEventListener("click", () => load(false));
+
+      $("clearLogs").addEventListener("click", async () => {
+        if (!confirm("Delete all of your log entries? This frees database space and can't be undone.")) return;
+        try {
+          const res = await fetch(API + "/api/cloud/logs/clear", { method: "POST", credentials: "same-origin" });
+          if (res.status === 401) { window.location.replace("/cloud/login"); return; }
+          if (!res.ok) throw new Error("HTTP " + res.status);
+          const { cleared } = await res.json();
+          showToast("Cleared " + cleared + " log" + (cleared === 1 ? "" : "s") + ".");
+          load(true);
+        } catch (_) {
+          showToast("Couldn’t clear the logs. Try again.");
+        }
+      });
 
       for (const chip of document.querySelectorAll(".chip")) {
         chip.addEventListener("click", () => {

@@ -120,7 +120,7 @@
     .image-upload input[type=file] {
       flex:1 1 220px;
       min-width:0;
-      color:var(--ink);
+      color:var(--text);
       font-size:13px
     }
     .image-upload input[type=file]::file-selector-button {

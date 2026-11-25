@@ -75,3 +75,35 @@ window.Privo = (() => {
 
   return { API, $, showToast, formatBytes, formatTime, shorten, loadMe };
 })();
+/* Collapsible sidebar — shrinks to icons + avatar, remembered per browser. */
+(() => {
+  "use strict";
+  const app = document.querySelector(".app");
+  const sidebar = document.querySelector(".sidebar");
+  if (!app || !sidebar) return;
+
+  const KEY = "privo-nav-collapsed";
+
+  const btn = document.createElement("button");
+  btn.type = "button";
+  btn.className = "collapse-btn";
+  btn.setAttribute("aria-label", "Collapse sidebar");
+  btn.innerHTML =
+    '<i class="fa-solid fa-angles-left" aria-hidden="true"></i><span class="lbl">Collapse</span>';
+  sidebar.insertBefore(btn, sidebar.children[1] || null);
+
+  const set = (on) => {
+    app.classList.toggle("nav-collapsed", on);
+    btn.setAttribute("aria-label", on ? "Expand sidebar" : "Collapse sidebar");
+    btn.querySelector("i").className = on
+      ? "fa-solid fa-angles-right"
+      : "fa-solid fa-angles-left";
+    try { localStorage.setItem(KEY, on ? "1" : "0"); } catch {}
+  };
+
+  btn.addEventListener("click", () =>
+    set(!app.classList.contains("nav-collapsed"))
+  );
+
+  try { set(localStorage.getItem(KEY) === "1"); } catch {}
+})();

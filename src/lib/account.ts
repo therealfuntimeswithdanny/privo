@@ -287,9 +287,9 @@ export async function loadDashboard(env: Env, user: SessionUser) {
       teams: u.teams || 0,
       maxTeams: u.max_teams || 10,
       r2Bytes: u.r2_bytes || 0,
-      maxR2Bytes: u.max_r2_bytes || 1073741824,
+      maxR2Bytes: u.max_r2_bytes || 2147483648,
       d1Bytes: u.d1_bytes || 0,
-      maxD1Bytes: u.max_d1_bytes || 314572800,
+      maxD1Bytes: u.max_d1_bytes || 104857600,
     },
     links: ((linksRes?.results || []) as LinkDashRow[]).map((r) => ({
       shortLink: `${r.domain}/${r.shortcode}`,

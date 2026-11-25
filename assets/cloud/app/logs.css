@@ -37,6 +37,14 @@
       background:#302019;
       box-shadow:inset 0 0 0 2px var(--cream)
     }
+    .chip-danger {
+      margin-left:auto;
+      color:#e88
+    }
+    .chip-danger:hover {
+      background:#3a1d1d;
+      color:#f99
+    }
     .logs-panel .table-wrap {
       flex:0 0 auto;
       overflow:visible

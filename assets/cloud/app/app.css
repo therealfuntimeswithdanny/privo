@@ -600,3 +600,97 @@
       }
 
     }
+
+    /* --------------------------------
+       Collapsible sidebar (icons + avatar only)
+    -------------------------------- */
+
+    .collapse-btn {
+      display:flex;
+      align-items:center;
+      gap:11px;
+
+      width:100%;
+      min-height:38px;
+      margin:0 0 14px;
+      padding:0 11px;
+
+      border:1px solid var(--border);
+      border-radius:9px;
+
+      background:transparent;
+      color:var(--muted);
+
+      font:500 12px/1 'Inter',system-ui,sans-serif;
+      text-align:left;
+      cursor:pointer;
+
+      transition:border-color .15s,color .15s
+    }
+    .collapse-btn:hover {
+      border-color:var(--peach);
+      color:var(--peach)
+    }
+    .collapse-btn i {
+      width:22px;
+      flex:0 0 22px;
+      text-align:center;
+      font-size:13px;
+      color:var(--peach)
+    }
+
+    @media(min-width:701px) {
+      .app.nav-collapsed {
+        --sidebar:86px
+      }
+      .app.nav-collapsed .sidebar {
+        padding:16px 10px
+      }
+      .app.nav-collapsed .brand {
+        font-size:0;
+        text-align:center;
+        margin:0 0 16px
+      }
+      .app.nav-collapsed .brand::before {
+        content:"P";
+        font-family:'Space Grotesk',system-ui,sans-serif;
+        font-size:22px;
+        font-weight:600;
+        color:var(--peach)
+      }
+      .app.nav-collapsed .nav a {
+        justify-content:center;
+        gap:0;
+        padding:0;
+        font-size:0
+      }
+      .app.nav-collapsed .nav i {
+        font-size:16px
+      }
+      .app.nav-collapsed .logout {
+        justify-content:center;
+        gap:0;
+        font-size:0
+      }
+      .app.nav-collapsed .user-card {
+        justify-content:center;
+        padding:6px
+      }
+      .app.nav-collapsed .user-card .name {
+        display:none
+      }
+      .app.nav-collapsed .collapse-btn {
+        justify-content:center;
+        gap:0;
+        padding:0
+      }
+      .app.nav-collapsed .collapse-btn .lbl {
+        display:none
+      }
+    }
+
+    @media(max-width:700px) {
+      .collapse-btn {
+        display:none
+      }
+    }
