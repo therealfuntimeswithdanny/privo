@@ -2,10 +2,10 @@
 
 import type { Env } from "../env";
 import { error, json } from "../lib/http";
-import { getSessionUser, loadDashboard, loadLogs } from "../lib/account";
+import { authenticate, getSessionUser, loadDashboard, loadLogs } from "../lib/account";
 
 export async function me(request: Request, env: Env): Promise<Response> {
-  const user = await getSessionUser(request, env);
+  const user = await authenticate(request, env);
   if (!user) return error("Not signed in", 401);
   return json({ user: { email: user.id, name: user.name, picture: user.picture } });
 }

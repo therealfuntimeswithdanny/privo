@@ -152,6 +152,13 @@
             wrap.append(check);
           }
 
+          const branding = document.createElement("button");
+          branding.className = "btn small";
+          branding.type = "button";
+          branding.textContent = "Stop page";
+          branding.addEventListener("click", () => toggleStopRow(d, tr));
+          wrap.append(branding);
+
           const remove = document.createElement("button");
           remove.className = "btn small danger";
           remove.type = "button";
@@ -196,6 +203,111 @@
         } catch (_) {
           showToast("Couldn’t load your domains. Try refreshing.");
         }
+      }
+
+      // Expandable per-domain stop page editor: brand, logo, colour, message.
+      function toggleStopRow(d, tr) {
+        const next = tr.nextSibling;
+        if (next && next.classList && next.classList.contains("stop-form-row")) {
+          next.remove();
+          return;
+        }
+
+        const row = document.createElement("tr");
+        row.className = "stop-form-row";
+        const cell = document.createElement("td");
+        cell.colSpan = 4;
+        row.append(cell);
+
+        const form = document.createElement("form");
+        form.className = "stop-form";
+        form.noValidate = true;
+        cell.append(form);
+
+        const stop = d.stop || {};
+
+        function field(labelText, id, placeholder) {
+          const wrap = document.createElement("div");
+          const lbl = document.createElement("label");
+          lbl.className = "lbl";
+          lbl.htmlFor = id;
+          lbl.textContent = labelText;
+          const input = document.createElement("input");
+          input.id = id;
+          input.type = "text";
+          input.autocomplete = "off";
+          input.spellcheck = false;
+          input.placeholder = placeholder;
+          wrap.append(lbl, input);
+          form.append(wrap);
+          return input;
+        }
+
+        const idp = "stop-" + d.id;
+        const brand = field("Brand name", idp + "-brand", "Acme Links");
+        brand.value = stop.brand || "";
+        const logo = field("Logo URL (https)", idp + "-logo", "https://example.com/logo.png");
+        logo.value = stop.logo || "";
+        const color = field("Accent colour", idp + "-color", "#d4975c");
+        color.value = stop.color || "";
+        const msgWrap = document.createElement("div");
+        msgWrap.className = "wide";
+        const msgLbl = document.createElement("label");
+        msgLbl.className = "lbl";
+        msgLbl.htmlFor = idp + "-message";
+        msgLbl.textContent = "Custom message (optional)";
+        const message = document.createElement("input");
+        message.id = idp + "-message";
+        message.type = "text";
+        message.placeholder = "Questions? Email support@example.com";
+        message.value = stop.message || "";
+        msgWrap.append(msgLbl, message);
+        form.append(msgWrap);
+
+        const actions = document.createElement("div");
+        actions.className = "stop-actions";
+        const save = document.createElement("button");
+        save.className = "btn small";
+        save.type = "submit";
+        save.textContent = "Save";
+        actions.append(save);
+
+        if (d.verified) {
+          const preview = document.createElement("a");
+          preview.className = "preview";
+          preview.href = "https://" + d.hostname + "/p/stop?url=" + encodeURIComponent("https://example.com");
+          preview.target = "_blank";
+          preview.rel = "noreferrer noopener";
+          preview.textContent = "Preview →";
+          actions.append(preview);
+        }
+        form.append(actions);
+
+        form.addEventListener("submit", async (event) => {
+          event.preventDefault();
+          save.disabled = true;
+          save.textContent = "Saving…";
+          try {
+            const { res, data } = await send("PUT", `/api/cloud/domains/${d.id}`, {
+              stop: {
+                brand: brand.value.trim() || null,
+                logo: logo.value.trim() || null,
+                color: color.value.trim() || null,
+                message: message.value.trim() || null
+              }
+            });
+            if (!res.ok) return showToast(data.error || "Couldn’t save the stop page.");
+            d.stop = data.stop || {};
+            showToast("Stop page saved");
+          } catch (_) {
+            showToast("Couldn’t reach Privo. Try again.");
+          } finally {
+            save.disabled = false;
+            save.textContent = "Save";
+          }
+        });
+
+        tr.after(row);
       }
 
       async function send(method, path, body) {

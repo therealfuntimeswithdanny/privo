@@ -10,6 +10,8 @@ import { backfill } from "../lib/meta";
 import { renderBlockedPage, renderLinkPage, type LinkRow } from "../lib/links";
 import { serveCachedImage, serveUploadedImage } from "../lib/images";
 import { blockedHost } from "../lib/blocklist";
+import { renderCustomStop, type StopBranding } from "../lib/stop";
+import { checkDestination } from "./links";
 import { HOSTNAME_RE } from "./domains";
 
 const LINK_SELECT =
@@ -109,13 +111,35 @@ export async function serveCustomHost(
   if (!HOSTNAME_RE.test(hostname)) return notFound();
 
   const verifiedDomain = await env.ACCOUNTS
-    .prepare("SELECT hostname FROM domains WHERE hostname = ? AND verified = 1")
+    .prepare("SELECT hostname, stop_brand, stop_logo, stop_color, stop_message FROM domains WHERE hostname = ? AND verified = 1")
     .bind(hostname)
-    .first();
+    .first<{
+      hostname: string;
+      stop_brand: string | null;
+      stop_logo: string | null;
+      stop_color: string | null;
+      stop_message: string | null;
+    }>();
   if (!verifiedDomain) return notFound();
 
   const isRead = request.method === "GET" || request.method === "HEAD";
   if (!isRead) return notFound();
+
+  // The domain's own branded safety interstitial, where its links send visitors.
+  if (pathname === "/p/stop") {
+    const branding: StopBranding = {
+      brand: verifiedDomain.stop_brand,
+      logo: verifiedDomain.stop_logo,
+      color: verifiedDomain.stop_color,
+      message: verifiedDomain.stop_message,
+    };
+    return renderCustomStop(hostname, branding);
+  }
+
+  // The stop page's safety check, same-origin on the custom domain.
+  if (pathname === "/api/check") {
+    return checkDestination(env, ctx, url);
+  }
 
   const imageMatch = pathname.match(/^\/i\/([a-zA-Z0-9]{4,45})$/);
   if (imageMatch) {

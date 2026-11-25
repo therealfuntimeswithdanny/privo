@@ -6,6 +6,7 @@
 import type { Env } from "../env";
 import { error, json, sameOrigin } from "../lib/http";
 import { getSessionUser, type SessionUser } from "../lib/account";
+import { cleanStopColor, cleanStopLogo, cleanStopText } from "../lib/stop";
 
 const CF_API = "https://api.cloudflare.com/client/v4";
 const CNAME_TARGET = "dns.privo.fyi";
@@ -79,6 +80,10 @@ interface DomainRow {
   error: string | null;
   cf_id?: string | null;
   created_at?: string;
+  stop_brand?: string | null;
+  stop_logo?: string | null;
+  stop_color?: string | null;
+  stop_message?: string | null;
 }
 
 function domainJson(row: DomainRow, extra: Record<string, unknown> = {}) {
@@ -89,6 +94,12 @@ function domainJson(row: DomainRow, extra: Record<string, unknown> = {}) {
     status: row.status || "pending",
     error: row.error || null,
     cnameTarget: CNAME_TARGET,
+    stop: {
+      brand: row.stop_brand || null,
+      logo: row.stop_logo || null,
+      color: row.stop_color || null,
+      message: row.stop_message || null,
+    },
     ...extra,
   };
 }
@@ -121,6 +132,9 @@ export async function handleDomains(request: Request, env: Env, url: URL): Promi
     if (verify && request.method === "POST") {
       return verifyDomain(env, user, Number(verify[1]));
     }
+    if (byId && request.method === "PUT") {
+      return updateStopPage(request, env, user, Number(byId[1]));
+    }
     if (byId && request.method === "DELETE") {
       return removeDomain(env, user, Number(byId[1]));
     }
@@ -134,7 +148,7 @@ export async function handleDomains(request: Request, env: Env, url: URL): Promi
 async function listDomains(env: Env, user: SessionUser): Promise<Response> {
   const [rowsRes, usageRes] = await env.ACCOUNTS.batch([
     env.ACCOUNTS
-      .prepare("SELECT id, hostname, verified, status, error, created_at FROM domains WHERE owner_id = ? ORDER BY created_at DESC, id DESC")
+      .prepare("SELECT id, hostname, verified, status, error, created_at, stop_brand, stop_logo, stop_color, stop_message FROM domains WHERE owner_id = ? ORDER BY created_at DESC, id DESC")
       .bind(user.id),
     env.ACCOUNTS.prepare("SELECT domains, max_domains FROM usage WHERE user_id = ?").bind(user.id),
   ]);
@@ -213,6 +227,56 @@ async function verifyDomain(env: Env, user: SessionUser, id: number): Promise<Re
     .run();
 
   return json(domainJson({ id, hostname: row.hostname, verified: state.verified ? 1 : 0, status: state.status, error: state.error }));
+}
+
+/**
+ * PUT /api/cloud/domains/:id — save the domain's branded stop page settings.
+ * Empty/absent fields clear the stored value. Every field is re-validated at
+ * render time too, so a bad value can only ever fall back to the default.
+ */
+async function updateStopPage(request: Request, env: Env, user: SessionUser, id: number): Promise<Response> {
+  const row = await env.ACCOUNTS
+    .prepare("SELECT id, hostname, verified, status, error FROM domains WHERE id = ? AND owner_id = ?")
+    .bind(id, user.id)
+    .first<DomainRow>();
+  if (!row) return error("Not found", 404);
+
+  let body: Record<string, unknown>;
+  try {
+    body = (await request.json()) as Record<string, unknown>;
+  } catch {
+    return error("Invalid request body", 400);
+  }
+
+  const stop = (body.stop ?? body) as Record<string, unknown>;
+
+  // Nulls come back as explicit errors rather than silently saved.
+  if (stop.brand != null && cleanStopText(stop.brand, 60) === null) {
+    return error("Brand name must be 60 characters or fewer.");
+  }
+  if (stop.message != null && cleanStopText(stop.message, 200) === null) {
+    return error("Message must be 200 characters or fewer.");
+  }
+  if (stop.color != null && cleanStopColor(stop.color) === null) {
+    return error("Colour must be a hex value like #d4975c.");
+  }
+  if (stop.logo != null && cleanStopLogo(stop.logo) === null) {
+    return error("Logo must be an https:// image URL under 300 characters.");
+  }
+
+  const saved = {
+    stop_brand: cleanStopText(stop.brand, 60),
+    stop_logo: cleanStopLogo(stop.logo),
+    stop_color: cleanStopColor(stop.color),
+    stop_message: cleanStopText(stop.message, 200),
+  };
+
+  await env.ACCOUNTS
+    .prepare("UPDATE domains SET stop_brand = ?, stop_logo = ?, stop_color = ?, stop_message = ? WHERE id = ?")
+    .bind(saved.stop_brand, saved.stop_logo, saved.stop_color, saved.stop_message, id)
+    .run();
+
+  return json(domainJson({ ...row, ...saved }));
 }
 
 async function removeDomain(env: Env, user: SessionUser, id: number): Promise<Response> {

@@ -1,0 +1,209 @@
+<!doctype html>
+
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="description" content="Privo API documentation — create, read, and update short links with an API key, and check destinations against the safety list.">
+  <meta name="robots" content="index, follow">
+  <meta name="theme-color" content="#140d08">
+  <meta name="color-scheme" content="dark">
+  <link rel="canonical" href="https://privo.fyi/docs">
+  <title>API Docs — Privo</title>
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Privo">
+  <meta property="og:title" content="API Docs — Privo">
+  <meta property="og:description" content="Create, read, and update Privo short links with an API key.">
+  <meta property="og:url" content="https://privo.fyi/docs">
+  <meta property="og:locale" content="en_US">
+  <link rel="icon" type="image/x-icon" href="https://danielmorrisey.com/media/images/seo/favicons/privo.svg">
+  <meta property="og:image" content="p/image.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@400;500;600&display=swap" rel="stylesheet">
+  <script src="https://kit.fontawesome.com/8f1701cd51.js" crossorigin="anonymous" defer></script>
+  <link href="/p/css/style.css" rel="stylesheet">
+  <link rel="stylesheet" href="/p/css/about.css">
+</head>
+
+<body>
+
+  <a class="skip-link" href="#main-content">
+    Skip to content
+  </a>
+
+  <div class="page">
+
+    <div data-site-header></div>
+
+    <main id="main-content">
+
+      <section class="about-hero" aria-labelledby="docs-title">
+        <h1 id="docs-title">
+          <span class="first">API</span>
+          <span class="second">Docs</span>
+        </h1>
+        <p class="lede">
+          Everything you can do on the Privo site, you can do from a script. Create and
+          edit short links, read a link back, or check a destination against the safety
+          list — no tracking, ever.
+        </p>
+      </section>
+
+      <div class="about-body">
+
+        <section class="about-section" aria-labelledby="d-auth">
+          <h2 id="d-auth">Authentication</h2>
+          <p>
+            Creating a link is free and anonymous — but links you create anonymously can't be
+            edited later. To own your links, create an API key in
+            <a href="/cloud/app/api.html">Privo Cloud → API Keys</a> and send it with every
+            request:
+          </p>
+          <div class="code-block">Authorization: Bearer pv_your_key_here</div>
+          <p>
+            Keys are shown once at creation. If one leaks, revoke it in Privo Cloud — the old
+            key stops working immediately. A quick way to test a key:
+          </p>
+          <div class="code-block">curl https://privo.fyi/api/me \
+  -H "Authorization: Bearer pv_your_key_here"</div>
+        </section>
+
+        <section class="about-section" aria-labelledby="d-create">
+          <h2 id="d-create">Create a link</h2>
+          <p><code>POST /api/link</code></p>
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Field</th>
+                <th>What it is</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>url <small>(required)</small></td>
+                <td>The destination. Must start with <code>http://</code> or <code>https://</code>.</td>
+              </tr>
+              <tr>
+                <td>shortcode</td>
+                <td>Your own code, 4–45 letters and digits. Taken names and page names return <code>409</code>.</td>
+              </tr>
+              <tr>
+                <td>domain</td>
+                <td>Defaults to <code>privo.fyi</code>. A custom domain must be verified on your account (requires a key).</td>
+              </tr>
+              <tr>
+                <td>seo</td>
+                <td>Optional object with <code>title</code>, <code>description</code>, <code>siteName</code>, <code>image</code> — overrides the preview the destination reports.</td>
+              </tr>
+            </tbody>
+          </table>
+          <p>For example:</p>
+          <div class="code-block">curl https://privo.fyi/api/link \
+  -X POST \
+  -H "Authorization: Bearer pv_your_key_here" \
+  -H "Content-Type: application/json" \
+  -d '{"url": "https://example.com/article", "shortcode": "myarticle"}'</div>
+          <p>Which returns:</p>
+          <div class="code-block">{
+  "shortcode": "myarticle",
+  "shortUrl": "https://privo.fyi/myarticle",
+  "originalUrl": "https://example.com/article",
+  "safety": "safe",
+  "preview": { "title": "…", "description": "…", "image": "…", "siteName": "…" }
+}</div>
+          <p>
+            Destinations are checked against the admin blocklist and Google Web Risk before a
+            link is stored. A flagged destination returns <code>422</code> with a
+            <code>threats</code> list.
+          </p>
+        </section>
+
+        <section class="about-section" aria-labelledby="d-read">
+          <h2 id="d-read">Read a link</h2>
+          <p>
+            <code>GET /api/link/{shortcode}</code> is public — no key needed. It returns the
+            link's destination, creation date, and preview details for
+            <code>privo.fyi</code> links:
+          </p>
+          <div class="code-block">curl https://privo.fyi/api/link/myarticle</div>
+        </section>
+
+        <section class="about-section" aria-labelledby="d-edit">
+          <h2 id="d-edit">Edit a link</h2>
+          <p>
+            <code>GET|PUT /api/cloud/link/{shortcode}?domain={domain}</code> reads or updates a
+            link on your account. The destination is re-checked for safety on every update.
+          </p>
+          <div class="code-block">curl "https://privo.fyi/api/cloud/link/myarticle?domain=privo.fyi" \
+  -X PUT \
+  -H "Authorization: Bearer pv_your_key_here" \
+  -H "Content-Type: application/json" \
+  -d '{"url": "https://example.com/new-article", "seo": {"title": "New title"}}'</div>
+        </section>
+
+        <section class="about-section" aria-labelledby="d-check">
+          <h2 id="d-check">Check a destination</h2>
+          <p>
+            <code>GET /api/check?url={url}</code> runs the same safety check used before every
+            redirect — blocklist first, then Web Risk. Public, no key needed.
+          </p>
+          <div class="code-block">curl "https://privo.fyi/api/check?url=https%3A%2F%2Fexample.com"
+# → { "status": "safe", "threats": [] }</div>
+        </section>
+
+        <section class="about-section" aria-labelledby="d-errors">
+          <h2 id="d-errors">Errors</h2>
+          <p>Failures return JSON with an <code>error</code> message and one of these statuses:</p>
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Status</th>
+                <th>Meaning</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>400</td>
+                <td>The request itself was wrong — bad URL, bad shortcode, malformed JSON.</td>
+              </tr>
+              <tr>
+                <td>401</td>
+                <td>No valid session or API key was sent.</td>
+              </tr>
+              <tr>
+                <td>403</td>
+                <td>Valid auth, but not allowed — e.g. an unverified domain or an account limit.</td>
+              </tr>
+              <tr>
+                <td>404 / 409</td>
+                <td>Not found, or the requested shortcode is taken or reserved.</td>
+              </tr>
+              <tr>
+                <td>422</td>
+                <td>The destination is blocked or flagged by Google Web Risk.</td>
+              </tr>
+            </tbody>
+          </table>
+        </section>
+
+        <section class="about-section" aria-labelledby="d-keys">
+          <h2 id="d-keys">Managing keys</h2>
+          <p>
+            Keys are managed in <a href="/cloud/app/api.html">Privo Cloud</a>, not over the API —
+            so a leaked key can't mint more keys. Up to 20 active keys per account.
+          </p>
+        </section>
+
+      </div>
+
+    </main>
+
+    <div data-site-footer></div>
+
+  </div>
+
+  <script src="/p/js/site-shell.js" defer></script>
+
+</body>
+</html>

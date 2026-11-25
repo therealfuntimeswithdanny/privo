@@ -102,7 +102,7 @@ export async function uploadImage(request: Request, env: Env, url: URL): Promise
       return error("Your account has reached its R2 storage limit.", 403);
     }
     if (message.includes("LIMIT_D1")) {
-      return error("Your account has reached its 1 GB database limit.", 403);
+      return error("Your account has reached its 300 MB database limit.", 403);
     }
     console.error("Preview image record error:", e);
     return error("The image uploaded, but its account record could not be saved.", 500);

@@ -13,6 +13,7 @@ import { handleDomains, recheckDomains } from "./routes/domains";
 import { handleAuth } from "./routes/auth";
 import { listReports, submitReport, updateReport } from "./routes/reports";
 import { addToBlocklist, listBlocklist, removeFromBlocklist } from "./routes/admin";
+import { createKey, listKeys, revokeKey } from "./routes/keys";
 import { serveCustomHost, serveMainHost } from "./routes/shortlink";
 
 const OWN_HOSTS = new Set(["privo.fyi", "dns.privo.fyi"]);
@@ -23,6 +24,7 @@ const OWN_HOSTS = new Set(["privo.fyi", "dns.privo.fyi"]);
 // for a .html URL just 307s back to the extensionless form).
 export const PAGE_MAP: Record<string, string> = {
   "/about": "/p/about",
+  "/docs": "/p/docs",
   "/terms": "/p/terms",
   "/privacy": "/p/privacy",
   "/stop": "/p/stop",
@@ -39,6 +41,7 @@ const PAGE_REDIRECTS: Record<string, string> = {
   "/legal/privacy": "/privacy",
   "/legal/privacy.html": "/privacy",
   "/p/about.html": "/about",
+  "/p/docs.html": "/docs",
   "/p/terms.html": "/terms",
   "/p/privacy.html": "/privacy",
   "/cloud/index.html": "/cloud",
@@ -95,6 +98,17 @@ export default {
 
       if (pathname.startsWith("/api/cloud/domains")) {
         return handleDomains(request, env, url);
+      }
+
+      if (pathname === "/api/cloud/keys" && request.method === "GET") {
+        return listKeys(request, env);
+      }
+      if (pathname === "/api/cloud/keys" && request.method === "POST") {
+        return createKey(request, env, url);
+      }
+      const keyMatch = pathname.match(/^\/api\/cloud\/keys\/(\d+)$/);
+      if (keyMatch && request.method === "DELETE") {
+        return revokeKey(request, env, url, keyMatch[1]!);
       }
 
       if (pathname === "/api/cloud/logs" && request.method === "GET") {

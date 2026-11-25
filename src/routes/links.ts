@@ -5,7 +5,7 @@ import { error, generateShortCode, isValidUrl, json, sameOrigin } from "../lib/h
 import { checkSafety, checkSafetyCached } from "../lib/webrisk";
 import { fetchPageMeta, saveMeta } from "../lib/meta";
 import { cacheImageState, publicImage, uploadedImageKeyFromUrl } from "../lib/images";
-import { getSessionUser, type SessionUser } from "../lib/account";
+import { authenticate, type SessionUser } from "../lib/account";
 import { blockedHost } from "../lib/blocklist";
 
 const DOMAIN_RE = /^(?=.{1,253}$)(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/;
@@ -16,7 +16,7 @@ const SHORTCODE_RE = /^[a-zA-Z0-9]{4,45}$/;
 // so a link with one of these names would be unreachable).
 const RESERVED_SHORTCODES = new Set([
   "about", "terms", "privacy", "stop", "report", "login", "admin", "cloud",
-  "assets", "api", "legal", "auth", "me",
+  "assets", "api", "legal", "auth", "me", "docs",
 ]);
 
 function reservedCode(domain: string, code: string): boolean {
@@ -100,7 +100,7 @@ export async function createLink(request: Request, env: Env): Promise<Response> 
       return error("Invalid URL provided");
     }
 
-    const owner = await getSessionUser(request, env);
+    const owner = await authenticate(request, env);
 
     const { domain: linkDomain, err: domainErr } = await resolveLinkDomain(body.domain, owner);
     if (domainErr) return domainErr;
@@ -180,7 +180,7 @@ export async function createLink(request: Request, env: Env): Promise<Response> 
         .run();
     } catch (insertError) {
       if (String((insertError as Error)?.message).includes("LIMIT_D1")) {
-        return error("Your account has reached its 1 GB database limit.", 403);
+        return error("Your account has reached its 300 MB database limit.", 403);
       }
       throw insertError;
     }
@@ -272,8 +272,8 @@ export async function getLink(env: Env, shortcode: string): Promise<Response> {
 
 // GET|PUT /api/cloud/link/:shortcode — the owner's editor.
 export async function editLink(request: Request, env: Env, url: URL, shortcode: string): Promise<Response> {
-  const user = await getSessionUser(request, env);
-  if (!user) return error("Not signed in", 401);
+  const user = await authenticate(request, env);
+  if (!user) return error("Sign in or send an API key.", 401);
 
   if (request.method === "PUT" && !sameOrigin(request, url)) {
     return error("Edits must come from Privo Cloud.", 403);
@@ -400,7 +400,7 @@ export async function editLink(request: Request, env: Env, url: URL, shortcode: 
       if (!results[0]?.meta?.changes) return error("Link not found", 404);
     } catch (e) {
       if (String((e as Error)?.message).includes("LIMIT_D1")) {
-        return error("Your account has reached its 1 GB database limit.", 403);
+        return error("Your account has reached its 300 MB database limit.", 403);
       }
       throw e;
     }

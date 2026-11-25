@@ -18,9 +18,10 @@ export interface LinkRow {
   seo_custom?: number;
 }
 
-/** Interstitial URL for a stored destination — handles ?, &, #, unicode. */
-function buildStopUrl(destination: string): string {
-  const stop = new URL("https://privo.fyi/p/stop");
+/** Interstitial URL for a stored destination — handles ?, &, #, unicode.
+ *  Links on verified custom domains stop on their own branded /p/stop. */
+function buildStopUrl(destination: string, domain: string): string {
+  const stop = new URL(domain === "privo.fyi" ? "https://privo.fyi/p/stop" : `https://${domain}/p/stop`);
   stop.searchParams.set("url", destination);
   stop.searchParams.set("viaPrivo", "true");
   return stop.toString();
@@ -31,7 +32,7 @@ export function renderLinkPage(shortcode: string, row: LinkRow): string {
   const host = destination.hostname.replace(/^www\./, "");
   const domain = row.domain || "privo.fyi";
   const shortUrl = `https://${domain}/${shortcode}`;
-  const stopUrl = buildStopUrl(row.url);
+  const stopUrl = buildStopUrl(row.url, row.domain || "privo.fyi");
 
   const title = row.title || host;
   const description = row.description || `Shortened link to ${host}`;

@@ -27,6 +27,7 @@ if (headerHost) {
 
   const links = [
     { href: "/p/about", text: "About" },
+    { href: "/docs", text: "API Docs" },
     { href: "/report", text: "Report a Link" },
     { href: "/cloud", text: "Privo Cloud" },
     { href: "/cloud/login", text: "Sign in", className: "signin" },

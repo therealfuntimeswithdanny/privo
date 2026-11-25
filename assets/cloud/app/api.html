@@ -34,16 +34,173 @@
       </aside>
       <main id="main">
         <h1 class="page-title">API Keys</h1>
-        <section class="panel api-panel" aria-labelledby="apiStatus">
-          <h2 id="apiStatus"><i class="fa-solid fa-circle-info" aria-hidden="true"></i>API key controls aren’t available yet</h2>
-          <p>The current Privo Cloud API doesn’t provide user API key management, so keys can’t be created, viewed, or revoked from this page.</p>
+        <p class="page-intro">Keys let scripts and other apps create and edit links as you. Keep them secret — a key is shown only once. See the <a href="/docs">API docs</a> for usage.</p>
+
+        <section class="panel new-key-panel" id="newKeyPanel" aria-labelledby="newKeyHeading" hidden>
+          <h2 id="newKeyHeading"><i class="fa-solid fa-key" aria-hidden="true"></i>Your new key</h2>
+          <p>Copy it now — we only store a hash, so it can't be shown again.</p>
+          <div class="key-reveal">
+            <code id="newKeyValue"></code>
+            <button class="btn small" id="copyKey" type="button">Copy</button>
+          </div>
+        </section>
+
+        <section class="panel api-panel" aria-labelledby="createHeading">
+          <h2 id="createHeading"><i class="fa-solid fa-plus" aria-hidden="true"></i>Create a key</h2>
+          <form id="createForm" class="create-form">
+            <label class="label" for="keyName">Key name</label>
+            <div class="field">
+              <i class="fa-solid fa-tag" aria-hidden="true"></i>
+              <input id="keyName" maxlength="60" placeholder="e.g. CI deploy script" required autocomplete="off">
+            </div>
+            <button class="btn submit" id="createKey" type="submit">Create API key</button>
+            <p class="form-error" id="createError" role="alert" hidden></p>
+          </form>
+        </section>
+
+        <section class="panel keys-panel" aria-label="Your API keys">
+          <h2 class="panel-head"><i class="fa-solid fa-list" aria-hidden="true"></i><span>Active keys</span></h2>
+          <div class="table-wrap">
+            <table class="data-table keys-table">
+              <thead>
+                <tr>
+                  <th scope="col">Name</th>
+                  <th scope="col">Key</th>
+                  <th scope="col">Created</th>
+                  <th scope="col">Last Used</th>
+                  <th scope="col">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="keyRows"><tr><td class="empty" colspan="5">Loading keys…</td></tr></tbody>
+            </table>
+          </div>
         </section>
       </main>
     </div>
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
     <script src="/cloud/app/app.js"></script>
     <script>
-    Privo.loadMe();
+    (() => {
+      const { API, $, showToast, formatTime } = Privo;
+      const body = $("keyRows");
+      const newKeyPanel = $("newKeyPanel");
+
+      Privo.loadMe();
+
+      function fillKeys(keys) {
+        body.textContent = "";
+        if (!keys.length) {
+          const row = document.createElement("tr");
+          const cell = document.createElement("td");
+          cell.className = "empty";
+          cell.colSpan = 5;
+          cell.textContent = "No active keys. Create one above.";
+          row.append(cell);
+          body.append(row);
+          return;
+        }
+        for (const key of keys) {
+          const row = document.createElement("tr");
+          const name = document.createElement("td");
+          name.textContent = key.name || "";
+          const prefix = document.createElement("td");
+          const code = document.createElement("code");
+          code.className = "key-prefix";
+          code.textContent = (key.prefix || "") + "…";
+          prefix.append(code);
+          const created = document.createElement("td");
+          created.textContent = formatTime(key.createdAt);
+          const used = document.createElement("td");
+          used.textContent = key.lastUsedAt ? formatTime(key.lastUsedAt) : "Never";
+          const actions = document.createElement("td");
+          const revoke = document.createElement("button");
+          revoke.className = "btn small danger";
+          revoke.type = "button";
+          revoke.textContent = "Revoke";
+          revoke.setAttribute("aria-label", "Revoke " + (key.name || "key"));
+          revoke.addEventListener("click", () => revokeKey(key));
+          actions.append(revoke);
+          row.append(name, prefix, created, used, actions);
+          body.append(row);
+        }
+      }
+
+      async function loadKeys() {
+        const res = await fetch(API + "/api/cloud/keys", { credentials: "same-origin", cache: "no-store" });
+        if (res.status === 401) {
+          window.location.replace("/cloud/login");
+          return;
+        }
+        if (!res.ok) throw new Error("HTTP " + res.status);
+        const data = await res.json();
+        fillKeys(data.keys || []);
+      }
+
+      $("createForm").addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const button = $("createKey");
+        button.disabled = true;
+        $("createError").hidden = true;
+        try {
+          const res = await fetch(API + "/api/cloud/keys", {
+            method: "POST",
+            credentials: "same-origin",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ name: $("keyName").value.trim() })
+          });
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.error || "Could not create the key.");
+          $("keyName").value = "";
+          $("newKeyValue").textContent = data.key.secret;
+          newKeyPanel.hidden = false;
+          newKeyPanel.scrollIntoView({ behavior: "smooth", block: "start" });
+          showToast("API key created.");
+          await loadKeys();
+        } catch (error) {
+          $("createError").textContent = error.message || "Could not create the key.";
+          $("createError").hidden = false;
+        } finally {
+          button.disabled = false;
+        }
+      });
+
+      $("copyKey").addEventListener("click", async () => {
+        try {
+          await navigator.clipboard.writeText($("newKeyValue").textContent);
+          showToast("Key copied.");
+        } catch (_) {
+          showToast("Copy failed — select the key text instead.");
+        }
+      });
+
+      async function revokeKey(key) {
+        if (!window.confirm("Revoke “" + (key.name || "this key") + "”? Anything using it stops working.")) return;
+        try {
+          const res = await fetch(API + "/api/cloud/keys/" + encodeURIComponent(key.id), {
+            method: "DELETE",
+            credentials: "same-origin"
+          });
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.error || "Could not revoke the key.");
+          showToast("Key revoked.");
+          await loadKeys();
+        } catch (error) {
+          showToast(error.message || "Could not revoke the key.");
+        }
+      }
+
+      loadKeys().catch(() => {
+        body.textContent = "";
+        const row = document.createElement("tr");
+        const cell = document.createElement("td");
+        cell.className = "empty";
+        cell.colSpan = 5;
+        cell.textContent = "Couldn’t load your keys. Try refreshing.";
+        row.append(cell);
+        body.append(row);
+        showToast("Couldn’t load your keys. Try refreshing.");
+      });
+    })();
     </script>
   </body>
 </html>

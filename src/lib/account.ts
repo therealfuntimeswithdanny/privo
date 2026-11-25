@@ -28,6 +28,44 @@ export async function getSessionUser(request: Request, env: Env): Promise<Sessio
     .first<SessionUser>();
 }
 
+/**
+ * Bearer-token auth: `Authorization: Bearer pv_…` against the api_keys table.
+ * Returns the key's owner, or null. Updates last_used_at on a hit.
+ */
+export async function getApiKeyUser(request: Request, env: Env): Promise<SessionUser | null> {
+  const header = request.headers.get("Authorization") || "";
+  const match = header.match(/^Bearer\s+(pv_[A-Za-z0-9_-]{20,})$/);
+  if (!match || !env.ACCOUNTS) return null;
+
+  const row = await env.ACCOUNTS
+    .prepare(
+      `SELECT k.id AS key_id, users.id AS id, users.name AS name, users.picture AS picture
+       FROM api_keys k JOIN users ON users.id = k.user_id
+       WHERE k.key_hash = ? AND k.revoked_at IS NULL`
+    )
+    .bind(await hashToken(match[1]!))
+    .first<{ key_id: number } & SessionUser>();
+
+  if (!row) return null;
+
+  env.ACCOUNTS
+    .prepare("UPDATE api_keys SET last_used_at = datetime('now') WHERE id = ?")
+    .bind(row.key_id)
+    .run()
+    .catch((e) => console.error("API key touch failed:", (e as Error)?.message));
+
+  return { id: row.id, name: row.name, picture: row.picture };
+}
+
+/** Whoever is calling: an API key if one is presented, otherwise the session. */
+export async function authenticate(request: Request, env: Env): Promise<SessionUser | null> {
+  if (request.headers.has("Authorization")) {
+    const keyUser = await getApiKeyUser(request, env);
+    if (keyUser) return keyUser;
+  }
+  return getSessionUser(request, env);
+}
+
 export async function createSession(env: Env, userId: string): Promise<{ token: string; maxAge: number }> {
   const token = randomToken(32);
   const now = new Date();
@@ -220,9 +258,9 @@ export async function loadDashboard(env: Env, user: SessionUser) {
       teams: u.teams || 0,
       maxTeams: u.max_teams || 10,
       r2Bytes: u.r2_bytes || 0,
-      maxR2Bytes: u.max_r2_bytes || 3221225472,
+      maxR2Bytes: u.max_r2_bytes || 1073741824,
       d1Bytes: u.d1_bytes || 0,
-      maxD1Bytes: u.max_d1_bytes || 1073741824,
+      maxD1Bytes: u.max_d1_bytes || 314572800,
     },
     links: ((linksRes?.results || []) as LinkDashRow[]).map((r) => ({
       shortLink: `${r.domain}/${r.shortcode}`,
