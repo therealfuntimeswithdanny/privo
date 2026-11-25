@@ -1,0 +1,114 @@
+# Privo API
+
+> Privo is a privacy-first URL shortener at https://privo.fyi. This file is the
+> complete API reference for agents. Machine-readable spec:
+> https://privo.fyi/openapi.json — human docs: https://privo.fyi/docs
+
+Base URL: `https://privo.fyi`. All responses are JSON. Errors are always
+`{"error": "message"}`; a 422 caused by a Web Risk flag also carries
+`"threats": [...]`. No CORS headers — call it server-side. No rate limits or
+429s today. Unversioned; additive changes only.
+
+## Authentication
+
+Send `Authorization: Bearer pv_…` on requests that need it. Keys are created
+in Privo Cloud → API Keys (https://privo.fyi/cloud/app/api.html) — NOT via the
+API, so a leaked key can't mint more. Scopes chosen at creation:
+
+- `links:read` — read links on privo.fyi and your verified custom domains
+- `links:write` — create and edit links on privo.fyi
+- `links:custom` — create, edit, and read links on your verified custom domains
+
+Test a key: `GET /api/me` → `{"user": {"email": "…", "name": "…", "picture": "…"}}`
+
+## Endpoints
+
+### POST /api/link — create a short link
+
+Body (JSON):
+- `url` (required): http(s) destination
+- `shortcode`: optional custom code, 4–45 ASCII letters/digits, case-sensitive,
+  stored verbatim. Reserved on privo.fyi (→ 409): about, terms, privacy, stop,
+  report, login, admin, cloud, assets, api, legal, auth, me, docs.
+- `domain`: body field, defaults to `privo.fyi`. Custom domain must be verified
+  on your account and needs `links:custom`.
+- `seo`: optional object `{title, description, siteName, image}` overriding the
+  destination's preview metadata. Limits: title 200, description 1000,
+  siteName 100, image 2048 chars and must be an http(s) URL.
+
+Anonymous creation (no key) is allowed but the link can never be edited.
+Not idempotent — retry only with an explicit `shortcode` (a duplicate → 409,
+not a second link).
+
+201 → `{"shortcode", "shortUrl", "originalUrl", "safety", "preview"}` where
+`safety` ∈ `clean|flagged|unchecked` and `preview` is
+`{title, description, image, siteName}` (nullable fields; may be null briefly
+while metadata is fetched).
+
+### GET /api/link/{shortcode}?domain={domain} — read a link
+
+Public for privo.fyi (no key). For a custom domain the key needs
+`links:read` or `links:custom` and ownership of the domain.
+200 → `{"shortcode", "url", "createdAt", "shortUrl", "preview"}`.
+`createdAt` is UTC `"YYYY-MM-DD HH:MM:SS"`.
+
+### GET|PUT /api/cloud/link/{shortcode}?domain={domain} — owner view / update
+
+Requires auth; the link must be owned by your account. Scope needed:
+`links:write` (privo.fyi) or `links:custom` (custom domain).
+
+GET → `{"shortcode", "shortLink", "url", "title", "description", "image", "siteName"}`.
+
+PUT is a FULL update, not a merge: `url` and `seo` are BOTH required — send
+`"seo": {}` for no overrides. Any seo field you omit is re-fetched from the
+new destination's metadata; previous preview values are not preserved. The new
+destination is safety-checked again. Response: same shape as GET.
+
+### GET /api/check?url={encoded} — destination safety check
+
+Public. Same check that runs before every redirect.
+200 → `{"status": "clean|flagged|unchecked", "threats": [...]}`.
+`threats` values: `MALWARE`, `SOCIAL_ENGINEERING`, `UNWANTED_SOFTWARE`,
+`BLOCKLIST`.
+
+## Errors
+
+| Status | Meaning |
+|--------|---------|
+| 400 | Bad request — invalid URL, shortcode, or JSON. `{"error": "Invalid URL provided"}` |
+| 401 | No valid key/session. `{"error": "Sign in or send an API key."}` |
+| 403 | Authenticated but not allowed — missing scope, unverified domain, account limit |
+| 404 | No such link on that domain (or not yours) |
+| 409 | Shortcode taken or reserved |
+| 422 | Destination blocked/flagged. `{"error": "…", "threats": ["MALWARE"]}` (threats only on Web Risk flags) |
+| 500 | Server error |
+
+## Notes
+
+- There is NO endpoint that lists an account's links. Don't guess one; the
+  links list is a session-only Privo Cloud view.
+- The `domain` parameter is a JSON body field on POST /api/link but a query
+  parameter on GET /api/link/{shortcode} and GET|PUT /api/cloud/link/{shortcode}.
+- Key management (create/revoke, max 20 active) is UI-only in Privo Cloud.
+
+## Quickstart
+
+```bash
+KEY=pv_your_key_here
+
+# verify the key
+curl -s https://privo.fyi/api/me -H "Authorization: Bearer $KEY"
+
+# create a link
+curl -s https://privo.fyi/api/link -X POST \
+  -H "Authorization: Bearer $KEY" -H "Content-Type: application/json" \
+  -d '{"url": "https://example.com/article", "shortcode": "myarticle"}'
+
+# read it back (public on privo.fyi)
+curl -s https://privo.fyi/api/link/myarticle
+
+# update it (seo is required; {} means no overrides)
+curl -s "https://privo.fyi/api/cloud/link/myarticle" -X PUT \
+  -H "Authorization: Bearer $KEY" -H "Content-Type: application/json" \
+  -d '{"url": "https://example.com/new-article", "seo": {}}'
+```

@@ -289,21 +289,6 @@
         0 24px 60px rgb(0 0 0 / 45%);
     }
 
-    .card .card-mark {
-      display: grid;
-      place-items: center;
-
-      width: 44px;
-      height: 44px;
-      margin-bottom: 20px;
-
-      border-radius: 12px;
-      background: linear-gradient(145deg, var(--peach), #b87a45);
-      color: var(--black);
-
-      font-size: 21px;
-    }
-
     .card h1 {
       margin: 0;
 
@@ -669,6 +654,56 @@
       color: var(--muted);
       font-size: 13px;
 
+      cursor: default;
+    }
+
+    /* Invite code dialog (create account) */
+
+    .invite-row {
+      display: flex;
+      align-items: stretch;
+      gap: 10px;
+    }
+
+    .invite-code {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      min-height: 44px;
+      padding: 10px 12px;
+      overflow-x: auto;
+
+      border: 1px solid var(--border-strong);
+      border-radius: 8px;
+
+      background: var(--bg);
+      color: var(--peach);
+      font: 500 14px/1.2 ui-monospace, SFMono-Regular, Menlo, monospace;
+      white-space: nowrap;
+      user-select: all;
+    }
+
+    #invite-copy {
+      min-height: 44px;
+      padding: 0 16px;
+      flex: none;
+
+      border: 1px solid var(--border-strong);
+      border-radius: 8px;
+
+      background: transparent;
+      color: var(--text);
+      font: 600 13px "Inter", system-ui, sans-serif;
+      cursor: pointer;
+    }
+
+    #invite-copy:hover:not(:disabled) {
+      border-color: var(--peach);
+      color: var(--peach);
+    }
+
+    #invite-copy:disabled {
+      opacity: .5;
       cursor: default;
     }
 

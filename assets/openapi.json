@@ -1,0 +1,348 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Privo API",
+    "version": "1.0.0",
+    "description": "Create, read, and update Privo short links, and check destinations against the safety list. Human-readable docs: https://privo.fyi/docs. Plain-text version for agents: https://privo.fyi/llms.txt. The API is unversioned and additive-stable: new fields may appear in responses, existing fields will not change meaning or be removed without notice.",
+    "contact": { "url": "https://privo.fyi" }
+  },
+  "servers": [{ "url": "https://privo.fyi" }],
+  "security": [{ "bearerAuth": [] }],
+  "paths": {
+    "/api/link": {
+      "post": {
+        "operationId": "createLink",
+        "summary": "Create a short link",
+        "description": "Anonymous creation is allowed (no key) but anonymous links can never be edited. Authenticated requests create links owned by the key's account. Not idempotent: each successful POST creates a new link. Safe to retry only if you supply a `shortcode` — a retried conflict returns 409 instead of a duplicate link.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["url"],
+                "properties": {
+                  "url": { "type": "string", "description": "Destination. Must be an http:// or https:// URL." },
+                  "shortcode": { "$ref": "#/components/schemas/Shortcode" },
+                  "domain": { "type": "string", "default": "privo.fyi", "description": "Domain the link is created under. A custom domain must be verified on your account and requires the links:custom scope." },
+                  "seo": { "$ref": "#/components/schemas/Seo" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Link created.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/CreateLinkResponse" },
+                "example": {
+                  "shortcode": "myarticle",
+                  "shortUrl": "https://privo.fyi/myarticle",
+                  "originalUrl": "https://example.com/article",
+                  "safety": "clean",
+                  "preview": { "title": "Example", "description": "An article.", "image": "https://privo.fyi/i/abc123.png", "siteName": "Example" }
+                }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "409": {
+            "description": "The requested shortcode is taken or is a reserved Privo page name.",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" }, "example": { "error": "Shortcode already taken" } } }
+          },
+          "422": { "$ref": "#/components/responses/Flagged" },
+          "500": { "$ref": "#/components/responses/ServerError" }
+        }
+      }
+    },
+    "/api/link/{shortcode}": {
+      "get": {
+        "operationId": "getLink",
+        "summary": "Read a link",
+        "description": "Public for privo.fyi links — no key needed. For a custom domain, send a key with links:read or links:custom scope; the domain must be verified on your account.",
+        "security": [{ "bearerAuth": [] }, {}],
+        "parameters": [
+          { "name": "shortcode", "in": "path", "required": true, "schema": { "type": "string" } },
+          { "name": "domain", "in": "query", "schema": { "type": "string", "default": "privo.fyi" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Link details.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ReadLinkResponse" },
+                "example": {
+                  "shortcode": "myarticle",
+                  "url": "https://example.com/article",
+                  "createdAt": "2026-01-15 10:23:41",
+                  "shortUrl": "https://privo.fyi/myarticle",
+                  "preview": { "title": "Example", "description": "An article.", "image": "https://privo.fyi/i/abc123.png", "siteName": "Example" }
+                }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        }
+      }
+    },
+    "/api/cloud/link/{shortcode}": {
+      "get": {
+        "operationId": "getOwnedLink",
+        "summary": "Read one of your links (owner view)",
+        "description": "Returns the link only if it belongs to your account.",
+        "parameters": [
+          { "name": "shortcode", "in": "path", "required": true, "schema": { "$ref": "#/components/schemas/Shortcode" } },
+          { "name": "domain", "in": "query", "schema": { "type": "string", "default": "privo.fyi" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Link details.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/OwnedLinkResponse" },
+                "example": {
+                  "shortcode": "myarticle",
+                  "shortLink": "privo.fyi/myarticle",
+                  "url": "https://example.com/article",
+                  "title": "Example",
+                  "description": "An article.",
+                  "image": "https://privo.fyi/i/abc123.png",
+                  "siteName": "Example"
+                }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        }
+      },
+      "put": {
+        "operationId": "updateLink",
+        "summary": "Update a link's destination and preview metadata",
+        "description": "Full update, not a merge: `url` and `seo` are both required (send `seo: {}` to keep no overrides). Omitted seo fields are re-fetched from the destination's own metadata — previous values are NOT preserved. The new destination is re-checked against the blocklist and Google Web Risk. Browser session calls are Origin-checked; API keys are not.",
+        "parameters": [
+          { "name": "shortcode", "in": "path", "required": true, "schema": { "$ref": "#/components/schemas/Shortcode" } },
+          { "name": "domain", "in": "query", "schema": { "type": "string", "default": "privo.fyi" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["url", "seo"],
+                "properties": {
+                  "url": { "type": "string", "maxLength": 2048, "description": "New destination, http:// or https://." },
+                  "seo": { "$ref": "#/components/schemas/Seo" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Link updated.",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/OwnedLinkResponse" } } }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "422": { "$ref": "#/components/responses/Flagged" },
+          "500": { "$ref": "#/components/responses/ServerError" }
+        }
+      }
+    },
+    "/api/check": {
+      "get": {
+        "operationId": "checkDestination",
+        "summary": "Check a destination against the safety list",
+        "description": "The same check run before every redirect: admin blocklist first, then Google Web Risk. Public, no key needed.",
+        "security": [{}],
+        "parameters": [
+          { "name": "url", "in": "query", "required": true, "schema": { "type": "string", "maxLength": 2048 }, "description": "URL-encoded http(s) URL to check." }
+        ],
+        "responses": {
+          "200": {
+            "description": "Verdict.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/CheckResponse" },
+                "example": { "status": "clean", "threats": [] }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" }
+        }
+      }
+    },
+    "/api/me": {
+      "get": {
+        "operationId": "me",
+        "summary": "Test your credentials",
+        "description": "Returns the account the key (or session) belongs to. Useful to verify a key works.",
+        "responses": {
+          "200": {
+            "description": "The authenticated account.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "user": {
+                      "type": "object",
+                      "properties": {
+                        "email": { "type": "string" },
+                        "name": { "type": ["string", "null"] },
+                        "picture": { "type": ["string", "null"] }
+                      }
+                    }
+                  }
+                },
+                "example": { "user": { "email": "did:plc:abc123", "name": "Ada", "picture": "https://cdn.bsky.app/img/avatar/..." } }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "API key in the form pv_… (20+ characters after the prefix). Create keys in Privo Cloud → API Keys. Scopes: links:read (read links on privo.fyi and verified domains), links:write (create/edit on privo.fyi), links:custom (create/edit/read on your verified custom domains)."
+      }
+    },
+    "schemas": {
+      "Shortcode": {
+        "type": "string",
+        "pattern": "^[a-zA-Z0-9]{4,45}$",
+        "description": "4–45 ASCII letters and digits. Case-sensitive — stored and matched verbatim, no canonicalization. On privo.fyi these names are reserved (409): about, terms, privacy, stop, report, login, admin, cloud, assets, api, legal, auth, me, docs."
+      },
+      "Seo": {
+        "type": "object",
+        "description": "Overrides for the link's preview metadata. On create every field is optional; on PUT the object is required but may be empty.",
+        "properties": {
+          "title": { "type": ["string", "null"], "maxLength": 200 },
+          "description": { "type": ["string", "null"], "maxLength": 1000 },
+          "siteName": { "type": ["string", "null"], "maxLength": 100 },
+          "image": { "type": ["string", "null"], "maxLength": 2048, "description": "An http(s) image URL, or the URL of an image you uploaded to your Privo Cloud account." }
+        }
+      },
+      "Preview": {
+        "type": ["object", "null"],
+        "description": "Preview metadata as the short-link page will present it. May be null briefly after creation while the destination's metadata is being fetched.",
+        "properties": {
+          "title": { "type": ["string", "null"] },
+          "description": { "type": ["string", "null"] },
+          "image": { "type": ["string", "null"], "description": "Privo-hosted copy of the preview image when available, else the source URL." },
+          "siteName": { "type": ["string", "null"] }
+        }
+      },
+      "CreateLinkResponse": {
+        "type": "object",
+        "properties": {
+          "shortcode": { "type": "string" },
+          "shortUrl": { "type": "string" },
+          "originalUrl": { "type": "string" },
+          "safety": { "type": "string", "enum": ["clean", "flagged", "unchecked"] },
+          "preview": { "$ref": "#/components/schemas/Preview" }
+        }
+      },
+      "ReadLinkResponse": {
+        "type": "object",
+        "properties": {
+          "shortcode": { "type": "string" },
+          "url": { "type": "string" },
+          "createdAt": { "type": "string", "description": "UTC timestamp, format \"YYYY-MM-DD HH:MM:SS\"." },
+          "shortUrl": { "type": "string" },
+          "preview": { "$ref": "#/components/schemas/Preview" }
+        }
+      },
+      "OwnedLinkResponse": {
+        "type": "object",
+        "properties": {
+          "shortcode": { "type": "string" },
+          "shortLink": { "type": "string", "description": "domain/shortcode, no scheme." },
+          "url": { "type": "string" },
+          "title": { "type": ["string", "null"] },
+          "description": { "type": ["string", "null"] },
+          "image": { "type": ["string", "null"] },
+          "siteName": { "type": ["string", "null"] }
+        }
+      },
+      "CheckResponse": {
+        "type": "object",
+        "properties": {
+          "status": { "type": "string", "enum": ["clean", "flagged", "unchecked"] },
+          "threats": {
+            "type": "array",
+            "items": { "type": "string", "enum": ["MALWARE", "SOCIAL_ENGINEERING", "UNWANTED_SOFTWARE", "BLOCKLIST"] },
+            "description": "Flat array of threat-type strings. Empty when clean."
+          }
+        }
+      },
+      "Error": {
+        "type": "object",
+        "properties": { "error": { "type": "string" } },
+        "required": ["error"],
+        "description": "All non-2xx responses are this shape. A 422 from a Web Risk flag additionally includes `threats`."
+      }
+    },
+    "responses": {
+      "BadRequest": {
+        "description": "The request itself was wrong — bad URL, bad shortcode, malformed JSON.",
+        "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" }, "example": { "error": "Invalid URL provided" } } }
+      },
+      "Unauthorized": {
+        "description": "No valid session or API key was sent.",
+        "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" }, "example": { "error": "Sign in or send an API key." } } }
+      },
+      "Forbidden": {
+        "description": "Valid auth, but not allowed — a scope the key lacks, an unverified domain, or an account limit.",
+        "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" }, "example": { "error": "This API key doesn't have permission to create links on that domain." } } }
+      },
+      "NotFound": {
+        "description": "No link with that shortcode on that domain (or not one you own).",
+        "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" }, "example": { "error": "Not found" } } }
+      },
+      "Flagged": {
+        "description": "The destination is on the admin blocklist or was flagged by Google Web Risk.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "error": { "type": "string" },
+                "threats": { "type": "array", "items": { "type": "string" }, "description": "Present only on Web Risk verdicts, not blocklist hits." }
+              }
+            },
+            "example": { "error": "This URL was flagged by Google Web Risk and can't be shortened.", "threats": ["MALWARE"] }
+          }
+        }
+      },
+      "ServerError": {
+        "description": "Something failed on Privo's side.",
+        "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } }
+      }
+    }
+  },
+  "x-notes": {
+    "rateLimits": "No rate limits or 429s today. Fair use applies; limits may be added later.",
+    "listEndpoint": "There is NO public endpoint to list an account's links. Do not guess one — the links list lives in Privo Cloud's session-only dashboard.",
+    "keyManagement": "Keys are created and revoked only in Privo Cloud (session auth), never via the key-authenticated API — a leaked key cannot mint more keys. Max 20 active keys.",
+    "cors": "No CORS headers. The API is designed for server-side calls; browsers must use Privo Cloud."
+  }
+}

@@ -82,14 +82,13 @@
     <!-- Right: sign in -->
     <main class="signin">
       <div class="card">
-        <span class="card-mark"><i class="fa-solid fa-link" aria-hidden="true"></i></span>
         <h1 id="signin-title">Sign in to Privo Cloud</h1>
         <p class="sub">Welcome back. Choose how you’d like to continue.</p>
 
         <p id="auth-error" role="status" hidden></p>
 
         <nav class="options" aria-label="Sign in options">
-          <a class="btn btn--primary" href="/cloud/auth/create" data-provider="create">
+          <a class="btn btn--primary" href="/cloud/auth/create" data-provider="create" id="create-account">
             <span class="ico"><i class="fa-solid fa-user-plus" aria-hidden="true"></i></span>
             Create an account
           </a>
@@ -119,7 +118,7 @@
         </p>
       </div>
 
-      <p class="below">New to Privo? <a href="/cloud/auth/create">Create an account</a></p>
+      <p class="below">New to Privo? <a href="/cloud/auth/create" id="create-account-below">Create an account</a></p>
     </main>
 
   </div>
@@ -144,7 +143,81 @@
     </form>
   </dialog>
 
+  <dialog class="handle-dialog" id="invite-dialog" aria-labelledby="invite-dialog-title">
+    <h2 id="invite-dialog-title">Create your account</h2>
+    <p>Privo accounts live on our Coffee &amp; Code server, which is invite-only for now.
+       Here’s your invite code — copy it, you’ll paste it during sign-up.</p>
+    <div class="invite-row">
+      <code class="invite-code" id="invite-code" aria-live="polite">Getting your invite…</code>
+      <button type="button" id="invite-copy" disabled>Copy</button>
+    </div>
+    <p class="dialog-error" id="invite-dialog-error" role="status" aria-live="polite"></p>
+    <div class="dialog-actions">
+      <button type="button" id="invite-dialog-cancel">Cancel</button>
+      <button type="button" id="invite-dialog-continue" disabled>Continue</button>
+    </div>
+  </dialog>
+
   <script>
+    // Create an account: fetch an invite code first (invite-only PDS), let the
+    // user copy it, then send them into the OAuth sign-up flow.
+    const inviteDialog = document.querySelector("#invite-dialog");
+    const inviteCodeEl = document.querySelector("#invite-code");
+    const inviteCopyBtn = document.querySelector("#invite-copy");
+    const inviteContinue = document.querySelector("#invite-dialog-continue");
+    const inviteError = document.querySelector("#invite-dialog-error");
+    const INVITE_URL = "https://invite-code.coffeencode.cc/";
+    let inviteCode = "";
+
+    async function fetchInviteCode() {
+      inviteCodeEl.textContent = "Getting your invite…";
+      inviteCopyBtn.disabled = true;
+      inviteContinue.disabled = true;
+      inviteError.textContent = "";
+      try {
+        const res = await fetch(INVITE_URL, { headers: { Accept: "application/json" } });
+        if (!res.ok) throw new Error("HTTP " + res.status);
+        const data = await res.json();
+        if (!data.code || typeof data.code !== "string") throw new Error("bad response");
+        inviteCode = data.code;
+        inviteCodeEl.textContent = inviteCode;
+        inviteCopyBtn.disabled = false;
+        inviteContinue.disabled = false;
+      } catch {
+        inviteCodeEl.textContent = "—";
+        inviteError.textContent = "Couldn’t get an invite code right now. Try again in a moment.";
+      }
+    }
+
+    for (const el of [document.querySelector("#create-account"), document.querySelector("#create-account-below")]) {
+      el.addEventListener("click", (event) => {
+        event.preventDefault();
+        inviteDialog.showModal();
+        fetchInviteCode();
+      });
+    }
+
+    inviteCopyBtn.addEventListener("click", async () => {
+      try {
+        await navigator.clipboard.writeText(inviteCode);
+        inviteCopyBtn.textContent = "Copied!";
+      } catch {
+        // Clipboard blocked — select the code so Ctrl/Cmd+C still works.
+        const range = document.createRange();
+        range.selectNodeContents(inviteCodeEl);
+        const sel = getSelection();
+        sel.removeAllRanges();
+        sel.addRange(range);
+        inviteCopyBtn.textContent = "Select & copy";
+      }
+      setTimeout(() => (inviteCopyBtn.textContent = "Copy"), 2000);
+    });
+
+    document.querySelector("#invite-dialog-cancel").addEventListener("click", () => inviteDialog.close());
+    inviteContinue.addEventListener("click", () => {
+      window.location.assign("/cloud/auth/create");
+    });
+
     const blueskySignIn = document.querySelector("#bluesky-signin");
     const handleDialog = document.querySelector("#bluesky-handle-dialog");
     const handleForm = document.querySelector("#bluesky-handle-form");

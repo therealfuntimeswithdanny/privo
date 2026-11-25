@@ -48,6 +48,12 @@
           edit short links, read a link back, or check a destination against the safety
           list — no tracking, ever.
         </p>
+        <p class="lede">
+          Building an agent or integration? Fetch the
+          <a href="/openapi.json">OpenAPI spec</a> or the
+          <a href="/llms.txt">llms.txt</a> version of these docs — both are written to be
+          machine-consumable.
+        </p>
       </section>
 
       <div class="about-body">
@@ -112,15 +118,29 @@
               </tr>
               <tr>
                 <td>shortcode</td>
-                <td>Your own code, 4–45 letters and digits. Taken names and page names return <code>409</code>.</td>
+                <td>
+                  Your own code: 4–45 ASCII letters and digits, <em>case-sensitive</em>,
+                  stored verbatim — <code>MyArticle</code> and <code>myarticle</code> are
+                  different links. Taken names and reserved page names
+                  (<code>about</code>, <code>terms</code>, <code>privacy</code>, <code>stop</code>,
+                  <code>report</code>, <code>login</code>, <code>admin</code>, <code>cloud</code>,
+                  <code>assets</code>, <code>api</code>, <code>legal</code>, <code>auth</code>,
+                  <code>me</code>, <code>docs</code>) return <code>409</code>.
+                </td>
               </tr>
               <tr>
                 <td>domain</td>
-                <td>Defaults to <code>privo.fyi</code>. A custom domain must be verified on your account (requires a key).</td>
+                <td>A <strong>body field</strong> here — unlike read/edit, where it's a query parameter. Defaults to <code>privo.fyi</code>. A custom domain must be verified on your account and the key needs the <code>links:custom</code> scope.</td>
               </tr>
               <tr>
                 <td>seo</td>
-                <td>Optional object with <code>title</code>, <code>description</code>, <code>siteName</code>, <code>image</code> — overrides the preview the destination reports.</td>
+                <td>
+                  Optional object overriding the preview the destination reports. Fields:
+                  <code>title</code> (≤200 chars), <code>description</code> (≤1000),
+                  <code>siteName</code> (≤100), <code>image</code> (≤2048, must be an
+                  <code>http(s)</code> URL). Any field you omit falls back to the
+                  destination's own metadata.
+                </td>
               </tr>
             </tbody>
           </table>
@@ -130,18 +150,30 @@
   -H "Authorization: Bearer pv_your_key_here" \
   -H "Content-Type: application/json" \
   -d '{"url": "https://example.com/article", "shortcode": "myarticle"}'</div>
-          <p>Which returns:</p>
+          <p>Which returns <code>201</code>:</p>
           <div class="code-block">{
-  "shortcode": "myarticle",
+  "shortcode": "myarticle",            // the code used, yours or generated
   "shortUrl": "https://privo.fyi/myarticle",
   "originalUrl": "https://example.com/article",
-  "safety": "safe",
-  "preview": { "title": "…", "description": "…", "image": "…", "siteName": "…" }
+  "safety": "clean",                   // "clean" | "flagged" | "unchecked"
+  "preview": {                         // can be null briefly while metadata is fetched
+    "title": "…", "description": "…",
+    "image": "…",                      // Privo-hosted copy when available
+    "siteName": "…"
+  }
 }</div>
           <p>
             Destinations are checked against the admin blocklist and Google Web Risk before a
-            link is stored. A flagged destination returns <code>422</code> with a
-            <code>threats</code> list.
+            link is stored. A flagged destination returns <code>422</code> — with a
+            <code>threats</code> array when Web Risk is the reason:
+          </p>
+          <div class="code-block">{ "error": "This URL was flagged by Google Web Risk and can't be shortened.",
+  "threats": ["MALWARE"] }
+// threats values: MALWARE, SOCIAL_ENGINEERING, UNWANTED_SOFTWARE, BLOCKLIST</div>
+          <p>
+            POST isn't idempotent — each success creates a new link. But it's safe to retry
+            when you supply a <code>shortcode</code>: a retried conflict returns
+            <code>409</code> instead of a duplicate link.
           </p>
         </section>
 
@@ -152,12 +184,25 @@
             link's destination, creation date, and preview details. It's public for
             <code>privo.fyi</code> links — no key needed. For a custom domain, send a key with
             the <code>links:read</code> or <code>links:custom</code> scope and the domain must be
-            verified on your account.
+            verified on your account. Note <code>domain</code> is a <strong>query
+            parameter</strong> here, not a body field.
           </p>
           <div class="code-block">curl https://privo.fyi/api/link/myarticle
 
 curl "https://privo.fyi/api/link/go?domain=go.example.com" \
   -H "Authorization: Bearer pv_your_key_here"</div>
+          <p>Which returns:</p>
+          <div class="code-block">{
+  "shortcode": "myarticle",
+  "url": "https://example.com/article",
+  "createdAt": "2026-01-15 10:23:41",   // UTC, "YYYY-MM-DD HH:MM:SS"
+  "shortUrl": "https://privo.fyi/myarticle",
+  "preview": { "title": "…", "description": "…", "image": "…", "siteName": "…" }
+}</div>
+          <p>
+            There is no endpoint that lists an account's links — the links list lives in
+            the Privo Cloud dashboard and needs a browser session.
+          </p>
         </section>
 
         <section class="about-section" aria-labelledby="d-edit">
@@ -166,6 +211,19 @@ curl "https://privo.fyi/api/link/go?domain=go.example.com" \
             <code>GET|PUT /api/cloud/link/{shortcode}?domain={domain}</code> reads or updates a
             link on your account. The destination is re-checked for safety on every update.
           </p>
+          <p>
+            PUT is a <strong>full update, not a merge</strong>: both <code>url</code> and
+            <code>seo</code> are required — send <code>"seo": {}</code> for no overrides.
+            Any <code>seo</code> field you omit is re-fetched from the new destination's
+            metadata; the previous preview values are not kept. GET and PUT share a
+            response shape:
+          </p>
+          <div class="code-block">{
+  "shortcode": "myarticle",
+  "shortLink": "privo.fyi/myarticle",   // no scheme
+  "url": "https://example.com/new-article",
+  "title": "…", "description": "…", "image": "…", "siteName": "…"
+}</div>
           <div class="code-block">curl "https://privo.fyi/api/cloud/link/myarticle?domain=privo.fyi" \
   -X PUT \
   -H "Authorization: Bearer pv_your_key_here" \
@@ -185,37 +243,90 @@ curl "https://privo.fyi/api/link/go?domain=go.example.com" \
 
         <section class="about-section" aria-labelledby="d-errors">
           <h2 id="d-errors">Errors</h2>
-          <p>Failures return JSON with an <code>error</code> message and one of these statuses:</p>
+          <p>
+            Every failure is JSON with an <code>error</code> message — nothing else to parse:
+          </p>
+          <div class="code-block">{ "error": "Invalid URL provided" }</div>
           <table class="data-table">
             <thead>
               <tr>
                 <th>Status</th>
                 <th>Meaning</th>
+                <th>Example body</th>
               </tr>
             </thead>
             <tbody>
               <tr>
                 <td>400</td>
                 <td>The request itself was wrong — bad URL, bad shortcode, malformed JSON.</td>
+                <td><code>{"error": "Invalid URL provided"}</code></td>
               </tr>
               <tr>
                 <td>401</td>
                 <td>No valid session or API key was sent.</td>
+                <td><code>{"error": "Sign in or send an API key."}</code></td>
               </tr>
               <tr>
                 <td>403</td>
-                <td>Valid auth, but not allowed — e.g. an unverified domain or an account limit.</td>
+                <td>Valid auth, but not allowed — a scope the key lacks, an unverified domain, an account limit.</td>
+                <td><code>{"error": "This API key doesn't have permission…"}</code></td>
               </tr>
               <tr>
-                <td>404 / 409</td>
-                <td>Not found, or the requested shortcode is taken or reserved.</td>
+                <td>404</td>
+                <td>No link with that shortcode on that domain — or not one you own.</td>
+                <td><code>{"error": "Not found"}</code></td>
+              </tr>
+              <tr>
+                <td>409</td>
+                <td>The requested shortcode is taken or a reserved page name.</td>
+                <td><code>{"error": "Shortcode already taken"}</code></td>
               </tr>
               <tr>
                 <td>422</td>
-                <td>The destination is blocked or flagged by Google Web Risk.</td>
+                <td>The destination is blocked or flagged by Google Web Risk. A Web Risk flag adds a <code>threats</code> array; a blocklist hit doesn't.</td>
+                <td><code>{"error": "…", "threats": ["MALWARE"]}</code></td>
               </tr>
             </tbody>
           </table>
+          <p>
+            There are no rate limits today — no <code>429</code>, no <code>Retry-After</code>.
+            Fair use applies and limits may appear later; build with retries anyway.
+          </p>
+        </section>
+
+        <section class="about-section" aria-labelledby="d-stability">
+          <h2 id="d-stability">Stability</h2>
+          <p>
+            The API is unversioned and additive-stable: new fields may appear in responses
+            (ignore what you don't need), but existing fields won't change meaning or be
+            removed without notice. The exact contract lives in
+            <a href="/openapi.json">openapi.json</a>.
+          </p>
+        </section>
+
+        <section class="about-section" aria-labelledby="d-quickstart">
+          <h2 id="d-quickstart">Quickstart</h2>
+          <p>Key → link → edit → check, end to end:</p>
+          <div class="code-block">KEY=pv_your_key_here   # create one in Privo Cloud → API Keys
+
+# verify the key works
+curl -s https://privo.fyi/api/me -H "Authorization: Bearer $KEY"
+
+# create a link
+curl -s https://privo.fyi/api/link -X POST \
+  -H "Authorization: Bearer $KEY" -H "Content-Type: application/json" \
+  -d '{"url": "https://example.com/article", "shortcode": "myarticle"}'
+
+# read it back (public on privo.fyi — no key needed)
+curl -s https://privo.fyi/api/link/myarticle
+
+# update the destination (seo is required; {} means no overrides)
+curl -s "https://privo.fyi/api/cloud/link/myarticle?domain=privo.fyi" -X PUT \
+  -H "Authorization: Bearer $KEY" -H "Content-Type: application/json" \
+  -d '{"url": "https://example.com/new-article", "seo": {}}'
+
+# check a URL before linking it
+curl -s "https://privo.fyi/api/check?url=https%3A%2F%2Fexample.com"</div>
         </section>
 
         <section class="about-section" aria-labelledby="d-keys">
