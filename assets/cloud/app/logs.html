@@ -92,7 +92,7 @@
           case "r2":
             return (l.action === "upload" ? "Uploaded" : "Deleted") + " file";
           case "d1":
-            return { insert: "Added", update: "Changed", delete: "Removed" }[l.action] + " " + (l.table || "record");
+            return { insert: "Added", update: "Changed", delete: "Removed", rotate: "Rotated" }[l.action] + " " + (l.table || "record");
           default:
             return l.action;
         }

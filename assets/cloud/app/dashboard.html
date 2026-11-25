@@ -170,7 +170,7 @@
           case "r2":
             return (log.action === "upload" ? "Uploaded file " : "Deleted file ") + shorten(log.r2Key, 36);
           case "d1":
-            return { insert: "Added", update: "Changed", delete: "Removed" }[log.action] + " " + (log.table || "record");
+            return { insert: "Added", update: "Changed", delete: "Removed", rotate: "Rotated" }[log.action] + " " + (log.table || "record");
           default:
             return log.action;
         }

@@ -108,6 +108,39 @@ export async function createKey(request: Request, env: Env, url: URL): Promise<R
   return json({ key: { ...keyJson(row), secret: key } }, { status: 201 });
 }
 
+// POST /api/cloud/keys/:id/rotate — replace a key, preserving its name and
+// scopes. The replacement secret is returned exactly once.
+export async function rotateKey(request: Request, env: Env, url: URL, id: string): Promise<Response> {
+  const user = await getSessionUser(request, env);
+  if (!user) return error("Not signed in", 401);
+  if (!sameOrigin(request, url)) return error("Keys can only be rotated from Privo Cloud.", 403);
+
+  const keyId = Number.parseInt(id, 10);
+  if (!Number.isFinite(keyId)) return error("Invalid key id.");
+
+  const key = KEY_PREFIX + randomToken(32);
+  const prefix = key.slice(0, 11);
+
+  let row: KeyRow | null;
+  try {
+    row = await env.ACCOUNTS
+      .prepare("UPDATE api_keys SET key_hash = ?, prefix = ? WHERE id = ? AND user_id = ? AND revoked_at IS NULL RETURNING id, name, scopes, prefix, created_at, last_used_at")
+      .bind(await hashToken(key), prefix, keyId, user.id)
+      .first<KeyRow>();
+  } catch (e) {
+    console.error("Key rotate error:", (e as Error)?.message);
+    return error("Could not rotate the key.", 500);
+  }
+  if (!row) return error("Key not found", 404);
+
+  await env.ACCOUNTS
+    .prepare("INSERT INTO audit_logs (user_id, category, action, db_table, db_rows) VALUES (?, 'd1', 'rotate', 'api_keys', 1)")
+    .bind(user.id)
+    .run();
+
+  return json({ key: { ...keyJson(row), secret: key } });
+}
+
 // DELETE /api/cloud/keys/:id — revokes (soft-deletes) one of the user's keys.
 export async function revokeKey(request: Request, env: Env, url: URL, id: string): Promise<Response> {
   const user = await getSessionUser(request, env);

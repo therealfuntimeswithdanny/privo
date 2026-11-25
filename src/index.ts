@@ -13,7 +13,7 @@ import { handleDomains, recheckDomains } from "./routes/domains";
 import { handleAuth } from "./routes/auth";
 import { listReports, submitReport, updateReport } from "./routes/reports";
 import { addToBlocklist, listBlocklist, removeFromBlocklist } from "./routes/admin";
-import { createKey, listKeys, revokeKey } from "./routes/keys";
+import { createKey, listKeys, revokeKey, rotateKey } from "./routes/keys";
 import { serveCustomHost, serveMainHost } from "./routes/shortlink";
 
 const OWN_HOSTS = new Set(["privo.fyi", "dns.privo.fyi"]);
@@ -105,6 +105,10 @@ export default {
       }
       if (pathname === "/api/cloud/keys" && request.method === "POST") {
         return createKey(request, env, url);
+      }
+      const rotateKeyMatch = pathname.match(/^\/api\/cloud\/keys\/(\d+)\/rotate$/);
+      if (rotateKeyMatch && request.method === "POST") {
+        return rotateKey(request, env, url, rotateKeyMatch[1]!);
       }
       const keyMatch = pathname.match(/^\/api\/cloud\/keys\/(\d+)$/);
       if (keyMatch && request.method === "DELETE") {

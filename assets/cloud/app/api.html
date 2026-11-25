@@ -36,14 +36,14 @@
       </aside>
       <main id="main">
         <h1 class="page-title">API Keys</h1>
-        <p class="page-intro">Keys let scripts and other apps create and edit links as you. Keep them secret — a key is shown only once. See the <a href="/docs">API docs</a> for usage.</p>
+        <p class="page-intro">Keys let scripts and other apps create and edit links as you. Keep them secret — new and rotated keys can only be copied immediately afterwards. See the <a href="/docs">API docs</a> for usage.</p>
 
         <section class="panel new-key-panel" id="newKeyPanel" aria-labelledby="newKeyHeading" hidden>
           <h2 id="newKeyHeading"><i class="fa-solid fa-key" aria-hidden="true"></i>Your new key</h2>
-          <p>Copy it now — we only store a hash, so it can't be shown again.</p>
+          <p>Copy it now — we only store a hash, so it can't be copied again after you leave or refresh this page.</p>
           <div class="key-reveal">
-            <code id="newKeyValue"></code>
-            <button class="btn small" id="copyKey" type="button">Copy</button>
+            <code id="newKeyValue">pv_••••••••••••••••••••••••••••••••</code>
+            <button class="btn small" id="copyKey" type="button"><i class="fa-solid fa-copy" aria-hidden="true"></i>Copy</button>
           </div>
         </section>
 
@@ -89,7 +89,7 @@
                   <th scope="col">Actions</th>
                 </tr>
               </thead>
-              <tbody id="keyRows"><tr><td class="empty" colspan="5">Loading keys…</td></tr></tbody>
+              <tbody id="keyRows"><tr><td class="empty" colspan="6">Loading keys…</td></tr></tbody>
             </table>
           </div>
         </section>
@@ -102,6 +102,9 @@
       const { API, $, showToast, formatTime } = Privo;
       const body = $("keyRows");
       const newKeyPanel = $("newKeyPanel");
+      const copyableSecrets = new Map();
+      let latestSecret = "";
+      let latestSecretKeyId = null;
 
       Privo.loadMe();
 
@@ -122,10 +125,21 @@
           const name = document.createElement("td");
           name.textContent = key.name || "";
           const prefix = document.createElement("td");
+          const keyCell = document.createElement("div");
+          keyCell.className = "key-cell";
           const code = document.createElement("code");
           code.className = "key-prefix";
-          code.textContent = (key.prefix || "") + "…";
-          prefix.append(code);
+          code.textContent = "pv_••••••••";
+          keyCell.append(code);
+          const copy = document.createElement("button");
+          copy.className = "btn small icon-btn";
+          copy.type = "button";
+          copy.innerHTML = '<i class="fa-solid fa-copy" aria-hidden="true"></i><span class="sr-only">Copy key</span>';
+          copy.setAttribute("aria-label", "Copy " + (key.name || "key"));
+          copy.title = copyableSecrets.has(key.id) ? "Copy key" : "Copy is only available right after creating or rotating a key";
+          copy.addEventListener("click", () => copySecret(copyableSecrets.get(key.id)));
+          keyCell.append(copy);
+          prefix.append(keyCell);
           const scopes = document.createElement("td");
           for (const scope of key.scopes || []) {
             const pill = document.createElement("span");
@@ -142,14 +156,21 @@
           const used = document.createElement("td");
           used.textContent = key.lastUsedAt ? formatTime(key.lastUsedAt) : "Never";
           const actions = document.createElement("td");
+          actions.className = "key-actions";
+          const rotate = document.createElement("button");
+          rotate.className = "btn small";
+          rotate.type = "button";
+          rotate.textContent = "Rotate";
+          rotate.setAttribute("aria-label", "Rotate " + (key.name || "key"));
+          rotate.addEventListener("click", () => rotateKey(key, rotate));
           const revoke = document.createElement("button");
           revoke.className = "btn small danger";
           revoke.type = "button";
           revoke.textContent = "Revoke";
           revoke.setAttribute("aria-label", "Revoke " + (key.name || "key"));
           revoke.addEventListener("click", () => revokeKey(key));
-          actions.append(revoke);
-          row.append(name, prefix, created, used, actions);
+          actions.append(rotate, revoke);
+          row.append(name, prefix, scopes, created, used, actions);
           body.append(row);
         }
       }
@@ -187,9 +208,7 @@
           const data = await res.json();
           if (!res.ok) throw new Error(data.error || "Could not create the key.");
           $("keyName").value = "";
-          $("newKeyValue").textContent = data.key.secret;
-          newKeyPanel.hidden = false;
-          newKeyPanel.scrollIntoView({ behavior: "smooth", block: "start" });
+          revealSecret(data.key);
           showToast("API key created.");
           await loadKeys();
         } catch (error) {
@@ -200,14 +219,50 @@
         }
       });
 
-      $("copyKey").addEventListener("click", async () => {
+      function revealSecret(key) {
+        latestSecret = key.secret;
+        latestSecretKeyId = key.id;
+        copyableSecrets.set(key.id, key.secret);
+        $("newKeyValue").textContent = "pv_••••••••••••••••••••••••••••••••";
+        newKeyPanel.hidden = false;
+        newKeyPanel.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+
+      async function copySecret(secret) {
+        if (!secret) {
+          showToast("This key can't be copied anymore. Rotate it for a replacement.");
+          return;
+        }
         try {
-          await navigator.clipboard.writeText($("newKeyValue").textContent);
+          await navigator.clipboard.writeText(secret);
           showToast("Key copied.");
         } catch (_) {
-          showToast("Copy failed — select the key text instead.");
+          showToast("Copy failed. Check your browser's clipboard permission.");
         }
-      });
+      }
+
+      $("copyKey").addEventListener("click", () => copySecret(latestSecret));
+
+      async function rotateKey(key, button) {
+        if (!window.confirm("Rotate “" + (key.name || "this key") + "”? The old key stops working immediately.")) return;
+        button.disabled = true;
+        try {
+          const res = await fetch(API + "/api/cloud/keys/" + encodeURIComponent(key.id) + "/rotate", {
+            method: "POST",
+            credentials: "same-origin"
+          });
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.error || "Could not rotate the key.");
+          copyableSecrets.delete(key.id);
+          revealSecret(data.key);
+          showToast("Key rotated. Copy the replacement now.");
+          await loadKeys();
+        } catch (error) {
+          showToast(error.message || "Could not rotate the key.");
+        } finally {
+          button.disabled = false;
+        }
+      }
 
       async function revokeKey(key) {
         if (!window.confirm("Revoke “" + (key.name || "this key") + "”? Anything using it stops working.")) return;
@@ -218,6 +273,12 @@
           });
           const data = await res.json();
           if (!res.ok) throw new Error(data.error || "Could not revoke the key.");
+          copyableSecrets.delete(key.id);
+          if (latestSecretKeyId === key.id) {
+            latestSecret = "";
+            latestSecretKeyId = null;
+            newKeyPanel.hidden = true;
+          }
           showToast("Key revoked.");
           await loadKeys();
         } catch (error) {
