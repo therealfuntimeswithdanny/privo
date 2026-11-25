@@ -169,6 +169,17 @@ export default {
       }
     }
 
+    // Temporary: log who fetches the OAuth client metadata — if the PDS's
+    // auth server never reaches us, an edge security rule is eating it.
+    if (pathname === "/oauth-client-metadata.json") {
+      console.log("client-metadata fetch:", JSON.stringify({
+        ua: request.headers.get("User-Agent"),
+        accept: request.headers.get("Accept"),
+        cf: (request.cf as Record<string, unknown>)?.botManagementScore ?? null,
+        country: (request.cf as Record<string, unknown>)?.country ?? null,
+      }));
+    }
+
     // ==========================================
     // 3. SHORT LINKS + IMAGES (before assets, since codes have no extension)
     // ==========================================
