@@ -53,6 +53,17 @@
               <i class="fa-solid fa-tag" aria-hidden="true"></i>
               <input id="keyName" maxlength="60" placeholder="e.g. CI deploy script" required autocomplete="off">
             </div>
+            <fieldset class="scopes">
+              <legend>Permissions</legend>
+              <label class="scope-option">
+                <input type="checkbox" id="scopeWrite" checked>
+                <span><strong>Create links on privo.fyi</strong> — the key can shorten links under privo.fyi</span>
+              </label>
+              <label class="scope-option">
+                <input type="checkbox" id="scopeCustom">
+                <span><strong>Use custom domains</strong> — the key can create links on your verified domains</span>
+              </label>
+            </fieldset>
             <button class="btn submit" id="createKey" type="submit">Create API key</button>
             <p class="form-error" id="createError" role="alert" hidden></p>
           </form>
@@ -66,6 +77,7 @@
                 <tr>
                   <th scope="col">Name</th>
                   <th scope="col">Key</th>
+                  <th scope="col">Permissions</th>
                   <th scope="col">Created</th>
                   <th scope="col">Last Used</th>
                   <th scope="col">Actions</th>
@@ -93,7 +105,7 @@
           const row = document.createElement("tr");
           const cell = document.createElement("td");
           cell.className = "empty";
-          cell.colSpan = 5;
+          cell.colSpan = 6;
           cell.textContent = "No active keys. Create one above.";
           row.append(cell);
           body.append(row);
@@ -108,6 +120,13 @@
           code.className = "key-prefix";
           code.textContent = (key.prefix || "") + "…";
           prefix.append(code);
+          const scopes = document.createElement("td");
+          for (const scope of key.scopes || []) {
+            const pill = document.createElement("span");
+            pill.className = "scope-pill";
+            pill.textContent = scope === "links:custom" ? "custom domains" : "privo.fyi links";
+            scopes.append(pill);
+          }
           const created = document.createElement("td");
           created.textContent = formatTime(key.createdAt);
           const used = document.createElement("td");
@@ -146,7 +165,13 @@
             method: "POST",
             credentials: "same-origin",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ name: $("keyName").value.trim() })
+            body: JSON.stringify({
+              name: $("keyName").value.trim(),
+              scopes: [
+                $("scopeWrite").checked ? "links:write" : null,
+                $("scopeCustom").checked ? "links:custom" : null
+              ].filter(Boolean)
+            })
           });
           const data = await res.json();
           if (!res.ok) throw new Error(data.error || "Could not create the key.");
@@ -194,7 +219,7 @@
         const row = document.createElement("tr");
         const cell = document.createElement("td");
         cell.className = "empty";
-        cell.colSpan = 5;
+        cell.colSpan = 6;
         cell.textContent = "Couldn’t load your keys. Try refreshing.";
         row.append(cell);
         body.append(row);

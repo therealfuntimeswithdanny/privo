@@ -98,6 +98,43 @@
       margin-top:16px;
       font-size:18px
     }
+    .scopes {
+      border:0;
+      margin:14px 0 0;
+      padding:0
+    }
+    .scopes legend {
+      font-size:14px;
+      margin-bottom:6px;
+      padding:0
+    }
+    .scope-option {
+      display:flex;
+      align-items:flex-start;
+      gap:10px;
+      padding:7px 0;
+      font-size:14px;
+      cursor:pointer
+    }
+    .scope-option input {
+      margin-top:3px;
+      accent-color:var(--peach)
+    }
+    .scope-option span {
+      opacity:.85
+    }
+    .scope-option strong {
+      font-weight:600
+    }
+    .scope-pill {
+      display:inline-block;
+      margin:1px 6px 1px 0;
+      border-radius:999px;
+      background:var(--bg);
+      padding:3px 10px;
+      font-size:12px;
+      white-space:nowrap
+    }
     .form-error {
       margin:12px 0 0;
       font-size:15px;

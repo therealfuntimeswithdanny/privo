@@ -28,23 +28,46 @@ export async function getSessionUser(request: Request, env: Env): Promise<Sessio
     .first<SessionUser>();
 }
 
+export interface Auth {
+  user: SessionUser;
+  /**
+   * Scope strings for API-key auth (e.g. "links:write"); null for a full
+   * session, which is unrestricted.
+   */
+  scopes: string[] | null;
+}
+
 /**
  * Bearer-token auth: `Authorization: Bearer pv_…` against the api_keys table.
- * Returns the key's owner, or null. Updates last_used_at on a hit.
+ * Returns the key's owner and scopes, or null. Updates last_used_at on a hit.
  */
-export async function getApiKeyUser(request: Request, env: Env): Promise<SessionUser | null> {
+export async function getApiKeyAuth(request: Request, env: Env): Promise<Auth | null> {
   const header = request.headers.get("Authorization") || "";
   const match = header.match(/^Bearer\s+(pv_[A-Za-z0-9_-]{20,})$/);
   if (!match || !env.ACCOUNTS) return null;
 
-  const row = await env.ACCOUNTS
-    .prepare(
-      `SELECT k.id AS key_id, users.id AS id, users.name AS name, users.picture AS picture
-       FROM api_keys k JOIN users ON users.id = k.user_id
-       WHERE k.key_hash = ? AND k.revoked_at IS NULL`
-    )
-    .bind(await hashToken(match[1]!))
-    .first<{ key_id: number } & SessionUser>();
+  let row: ({ key_id: number; scopes: string | null } & SessionUser) | null | undefined;
+  try {
+    row = await env.ACCOUNTS
+      .prepare(
+        `SELECT k.id AS key_id, k.scopes AS scopes, users.id AS id, users.name AS name, users.picture AS picture
+         FROM api_keys k JOIN users ON users.id = k.user_id
+         WHERE k.key_hash = ? AND k.revoked_at IS NULL`
+      )
+      .bind(await hashToken(match[1]!))
+      .first<{ key_id: number; scopes: string | null } & SessionUser>();
+  } catch (e) {
+    // Older api_keys tables predate the scopes column — treat as links:write.
+    if (!String((e as Error)?.message).includes("scopes")) throw e;
+    row = await env.ACCOUNTS
+      .prepare(
+        `SELECT k.id AS key_id, 'links:write' AS scopes, users.id AS id, users.name AS name, users.picture AS picture
+         FROM api_keys k JOIN users ON users.id = k.user_id
+         WHERE k.key_hash = ? AND k.revoked_at IS NULL`
+      )
+      .bind(await hashToken(match[1]!))
+      .first<{ key_id: number; scopes: string | null } & SessionUser>();
+  }
 
   if (!row) return null;
 
@@ -54,16 +77,22 @@ export async function getApiKeyUser(request: Request, env: Env): Promise<Session
     .run()
     .catch((e) => console.error("API key touch failed:", (e as Error)?.message));
 
-  return { id: row.id, name: row.name, picture: row.picture };
+  const scopes = String(row.scopes || "")
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+
+  return { user: { id: row.id, name: row.name, picture: row.picture }, scopes };
 }
 
 /** Whoever is calling: an API key if one is presented, otherwise the session. */
-export async function authenticate(request: Request, env: Env): Promise<SessionUser | null> {
+export async function authenticate(request: Request, env: Env): Promise<Auth | null> {
   if (request.headers.has("Authorization")) {
-    const keyUser = await getApiKeyUser(request, env);
-    if (keyUser) return keyUser;
+    const keyAuth = await getApiKeyAuth(request, env);
+    if (keyAuth) return keyAuth;
   }
-  return getSessionUser(request, env);
+  const user = await getSessionUser(request, env);
+  return user ? { user, scopes: null } : null;
 }
 
 export async function createSession(env: Env, userId: string): Promise<{ token: string; maxAge: number }> {

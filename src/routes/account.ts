@@ -5,8 +5,9 @@ import { error, json } from "../lib/http";
 import { authenticate, getSessionUser, loadDashboard, loadLogs } from "../lib/account";
 
 export async function me(request: Request, env: Env): Promise<Response> {
-  const user = await authenticate(request, env);
-  if (!user) return error("Not signed in", 401);
+  const auth = await authenticate(request, env);
+  if (!auth) return error("Not signed in", 401);
+  const user = auth.user;
   return json({ user: { email: user.id, name: user.name, picture: user.picture } });
 }
 

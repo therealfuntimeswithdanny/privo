@@ -10,9 +10,14 @@ export const KEY_PREFIX = "pv_";
 const MAX_ACTIVE_KEYS = 20;
 const NAME_MAX = 60;
 
+// The only things a key can do today: create links on privo.fyi, or on the
+// account's verified custom domains.
+export const ALLOWED_SCOPES = new Set(["links:write", "links:custom"]);
+
 interface KeyRow {
   id: number;
   name: string;
+  scopes: string;
   prefix: string;
   created_at: string;
   last_used_at: string | null;
@@ -22,6 +27,7 @@ function keyJson(row: KeyRow) {
   return {
     id: row.id,
     name: row.name,
+    scopes: String(row.scopes || "").split(",").map((s) => s.trim()).filter(Boolean),
     prefix: row.prefix,
     createdAt: row.created_at,
     lastUsedAt: row.last_used_at,
@@ -35,7 +41,7 @@ export async function listKeys(request: Request, env: Env): Promise<Response> {
 
   const { results } = await env.ACCOUNTS
     .prepare(
-      "SELECT id, name, prefix, created_at, last_used_at FROM api_keys WHERE user_id = ? AND revoked_at IS NULL ORDER BY id DESC"
+      "SELECT id, name, scopes, prefix, created_at, last_used_at FROM api_keys WHERE user_id = ? AND revoked_at IS NULL ORDER BY id DESC"
     )
     .bind(user.id)
     .all<KeyRow>();
@@ -59,6 +65,15 @@ export async function createKey(request: Request, env: Env, url: URL): Promise<R
   const name = typeof body.name === "string" ? body.name.trim().slice(0, NAME_MAX) : "";
   if (!name) return error("Give the key a name so you remember what it's for.");
 
+  let scopes = ["links:write"];
+  if (body.scopes !== undefined) {
+    if (!Array.isArray(body.scopes)) return error("scopes must be an array.");
+    scopes = body.scopes.map((s) => String(s).trim()).filter(Boolean);
+    if (!scopes.length) return error("Pick at least one permission for the key.");
+    const bad = scopes.find((s) => !ALLOWED_SCOPES.has(s));
+    if (bad) return error(`Unknown scope "${bad}".`);
+  }
+
   const count = await env.ACCOUNTS
     .prepare("SELECT COUNT(*) AS n FROM api_keys WHERE user_id = ? AND revoked_at IS NULL")
     .bind(user.id)
@@ -73,8 +88,8 @@ export async function createKey(request: Request, env: Env, url: URL): Promise<R
   let row: KeyRow | null;
   try {
     row = await env.ACCOUNTS
-      .prepare("INSERT INTO api_keys (user_id, name, prefix, key_hash) VALUES (?, ?, ?, ?) RETURNING id, name, prefix, created_at, last_used_at")
-      .bind(user.id, name, prefix, await hashToken(key))
+      .prepare("INSERT INTO api_keys (user_id, name, scopes, prefix, key_hash) VALUES (?, ?, ?, ?, ?) RETURNING id, name, scopes, prefix, created_at, last_used_at")
+      .bind(user.id, name, scopes.join(","), prefix, await hashToken(key))
       .first<KeyRow>();
   } catch (e) {
     if (String((e as Error)?.message).includes("LIMIT_D1")) {

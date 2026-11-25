@@ -63,7 +63,29 @@
           <div class="code-block">Authorization: Bearer pv_your_key_here</div>
           <p>
             Keys are shown once at creation. If one leaks, revoke it in Privo Cloud — the old
-            key stops working immediately. A quick way to test a key:
+            key stops working immediately.
+          </p>
+          <p>Each key is limited to the permissions you pick when creating it:</p>
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Scope</th>
+                <th>Allows</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>links:write</td>
+                <td>Create and edit links under <code>privo.fyi</code>.</td>
+              </tr>
+              <tr>
+                <td>links:custom</td>
+                <td>Create and edit links on the verified custom domains on your account.</td>
+              </tr>
+            </tbody>
+          </table>
+          <p>
+            A request outside the key's scopes returns <code>403</code>. A quick way to test a key:
           </p>
           <div class="code-block">curl https://privo.fyi/api/me \
   -H "Authorization: Bearer pv_your_key_here"</div>

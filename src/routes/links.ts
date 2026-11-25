@@ -100,10 +100,17 @@ export async function createLink(request: Request, env: Env): Promise<Response> 
       return error("Invalid URL provided");
     }
 
-    const owner = await authenticate(request, env);
+    const auth = await authenticate(request, env);
+    const owner = auth?.user ?? null;
 
     const { domain: linkDomain, err: domainErr } = await resolveLinkDomain(body.domain, owner);
     if (domainErr) return domainErr;
+
+    // API keys carry scopes: links:write covers privo.fyi, links:custom covers
+    // the account's verified domains. Sessions are unrestricted.
+    if (auth?.scopes && !auth.scopes.includes(linkDomain === "privo.fyi" ? "links:write" : "links:custom")) {
+      return error("This API key doesn't have permission to create links on that domain.", 403);
+    }
     if (linkDomain !== "privo.fyi" && !(await ownedDomain(env, linkDomain!, owner!.id))) {
       return error("Choose a verified custom domain on your account.", 403);
     }
@@ -272,15 +279,21 @@ export async function getLink(env: Env, shortcode: string): Promise<Response> {
 
 // GET|PUT /api/cloud/link/:shortcode — the owner's editor.
 export async function editLink(request: Request, env: Env, url: URL, shortcode: string): Promise<Response> {
-  const user = await authenticate(request, env);
-  if (!user) return error("Sign in or send an API key.", 401);
+  const auth = await authenticate(request, env);
+  if (!auth) return error("Sign in or send an API key.", 401);
+  const user = auth.user;
 
-  if (request.method === "PUT" && !sameOrigin(request, url)) {
+  // The Origin check guards browser sessions; an API key is its own credential.
+  if (request.method === "PUT" && auth.scopes === null && !sameOrigin(request, url)) {
     return error("Edits must come from Privo Cloud.", 403);
   }
 
   const domain = (url.searchParams.get("domain") || "privo.fyi").toLowerCase();
   if (!DOMAIN_RE.test(domain)) return error("Invalid link domain.");
+
+  if (auth.scopes && !auth.scopes.includes(domain === "privo.fyi" ? "links:write" : "links:custom")) {
+    return error("This API key doesn't have permission for that domain.", 403);
+  }
 
   interface LinkEditRow {
     id: number;

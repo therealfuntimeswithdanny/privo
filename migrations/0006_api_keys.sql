@@ -4,6 +4,7 @@ CREATE TABLE IF NOT EXISTS api_keys (
   id           INTEGER PRIMARY KEY AUTOINCREMENT,
   user_id      TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   name         TEXT NOT NULL,
+  scopes       TEXT NOT NULL DEFAULT 'links:write', -- comma-separated, e.g. 'links:write,links:custom'
   prefix       TEXT NOT NULL,              -- "pv_xxxxxxxx…" display prefix
   key_hash     TEXT NOT NULL UNIQUE,       -- hex SHA-256 of the full key
   created_at   TEXT NOT NULL DEFAULT (datetime('now')),
