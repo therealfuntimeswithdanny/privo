@@ -56,6 +56,10 @@
             <fieldset class="scopes">
               <legend>Permissions</legend>
               <label class="scope-option">
+                <input type="checkbox" id="scopeRead">
+                <span><strong>Read links</strong> — the key can fetch link details on privo.fyi and your verified domains</span>
+              </label>
+              <label class="scope-option">
                 <input type="checkbox" id="scopeWrite" checked>
                 <span><strong>Create links on privo.fyi</strong> — the key can shorten links under privo.fyi</span>
               </label>
@@ -124,7 +128,11 @@
           for (const scope of key.scopes || []) {
             const pill = document.createElement("span");
             pill.className = "scope-pill";
-            pill.textContent = scope === "links:custom" ? "custom domains" : "privo.fyi links";
+            pill.textContent = {
+              "links:read": "read links",
+              "links:write": "privo.fyi links",
+              "links:custom": "custom domains"
+            }[scope] || scope;
             scopes.append(pill);
           }
           const created = document.createElement("td");
@@ -168,6 +176,7 @@
             body: JSON.stringify({
               name: $("keyName").value.trim(),
               scopes: [
+                $("scopeRead").checked ? "links:read" : null,
                 $("scopeWrite").checked ? "links:write" : null,
                 $("scopeCustom").checked ? "links:custom" : null
               ].filter(Boolean)

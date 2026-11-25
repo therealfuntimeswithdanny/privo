@@ -10,9 +10,9 @@ export const KEY_PREFIX = "pv_";
 const MAX_ACTIVE_KEYS = 20;
 const NAME_MAX = 60;
 
-// The only things a key can do today: create links on privo.fyi, or on the
-// account's verified custom domains.
-export const ALLOWED_SCOPES = new Set(["links:write", "links:custom"]);
+// The only things a key can do today: read and create links on privo.fyi, or
+// on the account's verified custom domains.
+export const ALLOWED_SCOPES = new Set(["links:read", "links:write", "links:custom"]);
 
 interface KeyRow {
   id: number;

@@ -81,7 +81,7 @@ export default {
       }
 
       if (pathname.startsWith("/api/link/") && request.method === "GET") {
-        return linksApi.getLink(env, pathname.split("/")[3] || "");
+        return linksApi.getLink(request, env, url, pathname.split("/")[3] || "");
       }
 
       if (pathname === "/api/cloud/upload-image" && request.method === "POST") {

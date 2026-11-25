@@ -242,15 +242,30 @@ export async function createLink(request: Request, env: Env): Promise<Response> 
   }
 }
 
-// GET /api/link/:shortcode
-export async function getLink(env: Env, shortcode: string): Promise<Response> {
+// GET /api/link/:shortcode?domain=… — public for privo.fyi links. Reading a
+// link on a custom domain requires auth and ownership of that domain.
+export async function getLink(request: Request, env: Env, url: URL, shortcode: string): Promise<Response> {
   if (!shortcode) return error("Shortcode required");
+
+  const domain = (url.searchParams.get("domain") || "privo.fyi").toLowerCase();
+  if (!DOMAIN_RE.test(domain)) return error("Invalid link domain.");
+
+  if (domain !== "privo.fyi") {
+    const auth = await authenticate(request, env);
+    if (!auth) return error("Sign in or send an API key.", 401);
+    if (auth.scopes && !auth.scopes.includes("links:read") && !auth.scopes.includes("links:custom")) {
+      return error("This API key doesn't have permission to read links.", 403);
+    }
+    if (!(await ownedDomain(env, domain, auth.user.id))) {
+      return error("Choose a verified custom domain on your account.", 403);
+    }
+  }
 
   const result = await env.ACCOUNTS
     .prepare(
-      "SELECT url, created_at, title, description, image, site_name, image_cached FROM links WHERE domain = 'privo.fyi' AND shortcode = ?"
+      "SELECT url, created_at, title, description, image, site_name, image_cached FROM links WHERE domain = ? AND shortcode = ?"
     )
-    .bind(shortcode)
+    .bind(domain, shortcode)
     .first<{
       url: string;
       created_at: string;
@@ -267,11 +282,11 @@ export async function getLink(env: Env, shortcode: string): Promise<Response> {
     shortcode,
     url: result.url,
     createdAt: result.created_at,
-    shortUrl: `https://privo.fyi/${shortcode}`,
+    shortUrl: `https://${domain}/${shortcode}`,
     preview: {
       title: result.title,
       description: result.description,
-      image: publicImage(shortcode, result.image, result.image_cached),
+      image: publicImage(shortcode, result.image, result.image_cached, domain),
       siteName: result.site_name,
     },
   });

@@ -75,6 +75,10 @@
             </thead>
             <tbody>
               <tr>
+                <td>links:read</td>
+                <td>Fetch link details on <code>privo.fyi</code> and your verified custom domains.</td>
+              </tr>
+              <tr>
                 <td>links:write</td>
                 <td>Create and edit links under <code>privo.fyi</code>.</td>
               </tr>
@@ -144,11 +148,16 @@
         <section class="about-section" aria-labelledby="d-read">
           <h2 id="d-read">Read a link</h2>
           <p>
-            <code>GET /api/link/{shortcode}</code> is public — no key needed. It returns the
-            link's destination, creation date, and preview details for
-            <code>privo.fyi</code> links:
+            <code>GET /api/link/{shortcode}?domain={domain}</code> returns the
+            link's destination, creation date, and preview details. It's public for
+            <code>privo.fyi</code> links — no key needed. For a custom domain, send a key with
+            the <code>links:read</code> or <code>links:custom</code> scope and the domain must be
+            verified on your account.
           </p>
-          <div class="code-block">curl https://privo.fyi/api/link/myarticle</div>
+          <div class="code-block">curl https://privo.fyi/api/link/myarticle
+
+curl "https://privo.fyi/api/link/go?domain=go.example.com" \
+  -H "Authorization: Bearer pv_your_key_here"</div>
         </section>
 
         <section class="about-section" aria-labelledby="d-edit">
