@@ -9,7 +9,11 @@ import type { Env } from "../env";
 import { base64url, base64urlDecode, base64urlEncode, randomToken, sha256 } from "../lib/crypto";
 import { dpopProof, generateDpopKey, type DpopKeyPair } from "./dpop";
 
-export const ATCLIENT_ID = "https://privo.fyi/oauth-client-metadata.json";
+// Client metadata document. Hosted on privo.coffeencode.cc because
+// Cloudflare edge security on privo.fyi challenges the PDS auth server's
+// non-browser fetch — different zone, no bot rules. The doc must live at
+// exactly this URL and its client_id must match.
+export const ATCLIENT_ID = "https://privo.coffeencode.cc/oauth-client-metadata.json";
 export const ATPROTO_SCOPE =
   "atproto include:cc.coffeencode.authPrivo repo:app.bsky.actor.profile?action=create&action=update";
 export const ATPROTO_REDIRECT = "https://privo.fyi/cloud/auth/atproto/callback";
