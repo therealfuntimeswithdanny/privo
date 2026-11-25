@@ -11,6 +11,18 @@ import { blockedHost } from "../lib/blocklist";
 const DOMAIN_RE = /^(?=.{1,253}$)(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/;
 const SHORTCODE_RE = /^[a-zA-Z0-9]{4,45}$/;
 
+// Names of pages and route prefixes on privo.fyi — they can never be
+// shortcodes there (the page map is checked before the shortcode matcher,
+// so a link with one of these names would be unreachable).
+const RESERVED_SHORTCODES = new Set([
+  "about", "terms", "privacy", "stop", "report", "login", "admin", "cloud",
+  "assets", "api", "legal", "auth", "me",
+]);
+
+function reservedCode(domain: string, code: string): boolean {
+  return domain === "privo.fyi" && RESERVED_SHORTCODES.has(code.toLowerCase());
+}
+
 interface SeoInput {
   title: string | null;
   description: string | null;
@@ -123,6 +135,9 @@ export async function createLink(request: Request, env: Env): Promise<Response> 
       if (!SHORTCODE_RE.test(shortcode)) {
         return error("Shortcode must be 4-45 alphanumeric characters");
       }
+      if (reservedCode(linkDomain!, shortcode)) {
+        return error("That name is reserved for a Privo page", 409);
+      }
       const existing = await env.ACCOUNTS
         .prepare("SELECT shortcode FROM links WHERE domain = ? AND shortcode = ?")
         .bind(linkDomain, shortcode)
@@ -136,7 +151,7 @@ export async function createLink(request: Request, env: Env): Promise<Response> 
           .prepare("SELECT shortcode FROM links WHERE domain = ? AND shortcode = ?")
           .bind(linkDomain, shortcode)
           .first();
-        if (!existing) break;
+        if (!existing && !reservedCode(linkDomain!, shortcode)) break;
         attempts++;
       }
       if (attempts >= 10) return error("Failed to generate unique shortcode", 500);

@@ -17,6 +17,33 @@ import { serveCustomHost, serveMainHost } from "./routes/shortlink";
 
 const OWN_HOSTS = new Set(["privo.fyi", "dns.privo.fyi"]);
 
+// Content pages at pretty root paths. Checked before the shortcode matcher so
+// these paths can never be treated as links — and shortcodes can't shadow them.
+// Values are the assets binding's canonical extensionless paths (asking assets
+// for a .html URL just 307s back to the extensionless form).
+export const PAGE_MAP: Record<string, string> = {
+  "/about": "/p/about",
+  "/terms": "/p/terms",
+  "/privacy": "/p/privacy",
+  "/stop": "/p/stop",
+  "/report": "/report",
+  "/login": "/cloud/login",
+  "/admin": "/cloud/admin/reports",
+  "/cloud": "/cloud/",
+};
+
+// Old locations 301 to the pretty paths (bookmarks, indexed pages).
+const PAGE_REDIRECTS: Record<string, string> = {
+  "/legal/terms": "/terms",
+  "/legal/terms.html": "/terms",
+  "/legal/privacy": "/privacy",
+  "/legal/privacy.html": "/privacy",
+  "/p/about.html": "/about",
+  "/p/terms.html": "/terms",
+  "/p/privacy.html": "/privacy",
+  "/cloud/index.html": "/cloud",
+};
+
 export default {
   // Cron (every 12 hours): re-check links against Web Risk and pending
   // domains against Cloudflare.
@@ -108,6 +135,24 @@ export default {
     // ==========================================
     if (pathname.startsWith("/cloud/auth/")) {
       return handleAuth(request, env, url);
+    }
+
+    // ==========================================
+    // 3a. PAGES at pretty root paths (before shortcodes, so /about is never a link)
+    // ==========================================
+    if (request.method === "GET" || request.method === "HEAD") {
+      const redirectTo = PAGE_REDIRECTS[pathname];
+      if (redirectTo) {
+        const target = new URL(redirectTo, url);
+        target.search = url.search;
+        return Response.redirect(target.toString(), 301);
+      }
+      const assetPath = PAGE_MAP[pathname];
+      if (assetPath) {
+        const pageUrl = new URL(assetPath, url);
+        pageUrl.search = url.search;
+        return env.ASSETS.fetch(new Request(pageUrl.toString(), request));
+      }
     }
 
     // ==========================================
