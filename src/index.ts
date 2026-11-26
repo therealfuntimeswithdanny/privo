@@ -4,19 +4,56 @@
 // static assets → custom domains → 404.
 
 import type { Env } from "./env";
-import { error, json } from "./lib/http";
+import { buildCookie, error, json, redirect } from "./lib/http";
+import { requireAdmin } from "./lib/account";
 import { recheckLinks } from "./lib/webrisk";
 import * as linksApi from "./routes/links";
 import { uploadImage } from "./routes/upload";
 import * as account from "./routes/account";
 import { handleDomains, recheckDomains } from "./routes/domains";
-import { handleAuth } from "./routes/auth";
+import { ADMIN_NEXT_COOKIE, handleAuth } from "./routes/auth";
 import { listReports, submitReport, updateReport } from "./routes/reports";
 import { addToBlocklist, listBlocklist, removeFromBlocklist } from "./routes/admin";
 import { createKey, listKeys, revokeKey, rotateKey } from "./routes/keys";
 import { serveCustomHost, serveMainHost } from "./routes/shortlink";
 
 const OWN_HOSTS = new Set(["privo.fyi", "dns.privo.fyi"]);
+
+// The reports UI is a static asset, so it needs its own server-side gate:
+// the admin API being protected does not stop someone loading the HTML itself.
+// Normalize encoding and duplicate slashes before matching so a prettified or
+// percent-encoded asset path cannot slip around the gate.
+function isAdminReportsPath(pathname: string): boolean {
+  let normalized = pathname.replace(/\/{2,}/g, "/");
+  try {
+    normalized = decodeURIComponent(normalized);
+  } catch {
+    // A malformed escape can't map to the asset anyway.
+  }
+  normalized = normalized.toLowerCase();
+  return normalized === "/admin" || normalized.startsWith("/cloud/admin/");
+}
+
+async function adminReportsGate(request: Request, env: Env, url: URL): Promise<Response | null> {
+  const user = await requireAdmin(request, env);
+  if (!(user instanceof Response)) return null;
+
+  if (user.status === 401) {
+    const login = new URL("/cloud/login", url);
+    return redirect(login.toString(), [
+      buildCookie(ADMIN_NEXT_COOKIE, "/cloud/admin/reports", {
+        maxAge: 600,
+        path: "/cloud/auth",
+        secure: url.protocol === "https:",
+      }),
+    ]);
+  }
+
+  return new Response("Not authorized", {
+    status: 403,
+    headers: { "Content-Type": "text/plain; charset=utf-8", "Cache-Control": "no-store" },
+  });
+}
 
 // Content pages at pretty root paths. Checked before the shortcode matcher so
 // these paths can never be treated as links — and shortcodes can't shadow them.
@@ -160,7 +197,15 @@ export default {
     }
 
     // ==========================================
-    // 3a. PAGES at pretty root paths (before shortcodes, so /about is never a link)
+    // 3a. ADMIN REPORTS UI — static HTML, but still admin-only
+    // ==========================================
+    if ((request.method === "GET" || request.method === "HEAD") && isAdminReportsPath(pathname)) {
+      const denied = await adminReportsGate(request, env, url);
+      if (denied) return denied;
+    }
+
+    // ==========================================
+    // 3b. PAGES at pretty root paths (before shortcodes, so /about is never a link)
     // ==========================================
     if (request.method === "GET" || request.method === "HEAD") {
       const redirectTo = PAGE_REDIRECTS[pathname];

@@ -104,6 +104,9 @@
         `<td class="when">${esc(r.createdAt)}</td>` +
         `<td class="actions"></td>`;
       const actions = tr.querySelector(".actions");
+      const blockButton = btn("Block host", () => blockReportHost(r, tr, blockButton));
+      blockButton.classList.add("danger");
+      actions.append(blockButton);
       if (r.status !== "resolved") actions.append(btn("Resolve", () => act(r.id, "resolve", tr)));
       if (r.status !== "dismissed") actions.append(btn("Dismiss", () => act(r.id, "dismiss", tr)));
       if (r.status !== "open") actions.append(btn("Reopen", () => act(r.id, "reopen", tr)));
@@ -115,12 +118,58 @@
       b.textContent = label; b.onclick = fn; return b;
     }
 
+    function setMsg(text, ok = false) {
+      msg.textContent = text;
+      msg.classList.toggle("ok", ok);
+    }
+
     async function act(id, action, tr) {
       const res = await fetch(`/api/admin/reports/${id}/${action}`, { method: "POST" });
-      if (!res.ok) { msg.textContent = "Action failed — try again."; return; }
+      if (!res.ok) { setMsg("Action failed — try again."); return false; }
       if (status !== "all") tr.remove();
       else location.reload();
       if (!rows.children.length) empty.hidden = false;
+      return true;
+    }
+
+    async function blockReportHost(r, tr, button) {
+      let host = "";
+      try {
+        host = new URL(r.url).hostname.replace(/^www\./, "");
+      } catch {
+        setMsg("That report doesn’t have a valid URL to block.");
+        return;
+      }
+
+      if (!confirm(`Block ${host} and resolve report #${r.id}?`)) return;
+
+      button.disabled = true;
+      button.textContent = "Blocking…";
+      setMsg("");
+
+      const res = await fetch("/api/admin/blocklist", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ host: r.url, note: `Report #${r.id}` }),
+      });
+      const out = await res.json().catch(() => ({}));
+
+      button.disabled = false;
+      button.textContent = "Block host";
+
+      // 409 means the host was already blocked, which is still a successful
+      // outcome for this action.
+      if (!res.ok && res.status !== 409) {
+        setMsg(out.error || `Couldn’t block ${host}.`);
+        return;
+      }
+
+      await loadBlocks();
+      const resolved = r.status === "resolved" ? true : await act(r.id, "resolve", tr);
+      setMsg(
+        resolved ? `${host} is blocked.` : `${host} is blocked, but the report could not be resolved.`,
+        resolved
+      );
     }
 
     document.querySelectorAll(".tabs button").forEach(b => b.addEventListener("click", () => {

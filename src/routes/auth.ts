@@ -40,6 +40,8 @@ const GOOGLE_SCOPES = [
 
 const OAUTH_COOKIE = "privo_oauth"; // state + PKCE verifier while the user is away
 const OAUTH_TTL_SECONDS = 600;
+export const ADMIN_NEXT_COOKIE = "privo_admin_next";
+const ADMIN_NEXT_PATH = "/cloud/admin/reports";
 
 export async function handleAuth(request: Request, env: Env, url: URL): Promise<Response> {
   const path = url.pathname;
@@ -276,8 +278,10 @@ async function atprotoCallback(request: Request, env: Env, url: URL): Promise<Re
     const session = await createSession(env, user.id);
     await logSignIn(env, request, user.id, "bluesky");
 
-    return redirect(`${url.origin}/cloud/app/dashboard`, [
+    const adminNext = getCookie(request, ADMIN_NEXT_COOKIE) === ADMIN_NEXT_PATH;
+    return redirect(`${url.origin}${adminNext ? ADMIN_NEXT_PATH : "/cloud/app/dashboard"}`, [
       clearOauth,
+      buildCookie(ADMIN_NEXT_COOKIE, "", { maxAge: 0, path: "/cloud/auth", secure }),
       buildCookie(SESSION_COOKIE, session.token, { maxAge: session.maxAge, path: "/", secure }),
     ]);
   } catch (e) {

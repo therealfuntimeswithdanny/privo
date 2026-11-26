@@ -73,6 +73,9 @@
       transition:border-color .16s ease, color .16s ease;
     }
     .actions button:hover { border-color:var(--peach); color:var(--peach); }
+    .actions button.danger { border-color:#8f4332; color:#ffb3a7; }
+    .actions button.danger:hover { border-color:#ff8f78; color:#ff8f78; }
+    .actions button:disabled { cursor:wait; opacity:.6; }
     .empty { padding:48px 0; text-align:center; color:var(--faint); }
     .more {
       margin-top:18px; padding:10px 20px;
@@ -81,5 +84,6 @@
     }
     .more:hover { border-color:var(--peach); color:var(--peach); }
     #msg { color:#ffb3a7; margin-top:14px; min-height:1.4em; font-size:13px; }
+    #msg.ok { color:#b9e8b0; }
     @media (max-width:720px){ td.details, th:nth-child(3), td:nth-child(3){display:none} }
   
