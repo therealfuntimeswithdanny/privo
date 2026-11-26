@@ -49,12 +49,14 @@ export async function dpopProof(
   };
 
   const now = Math.floor(Date.now() / 1000);
+  // No `exp` claim: RFC 9449 doesn't require one, the reference ATProto
+  // client omits it, and some PDS builds reject proofs whose exp falls
+  // outside their accepted window ("exp claim timestamp check failed").
   const payload: Record<string, unknown> = {
     jti: randomToken(16),
     htm: method,
     htu: endpoint,
     iat: now,
-    exp: now + 30,
   };
   if (opts.iss) payload.iss = opts.iss;
   if (opts.nonce) payload.nonce = opts.nonce;

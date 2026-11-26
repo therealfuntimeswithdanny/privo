@@ -8,7 +8,7 @@
   "redirect_uris": [
     "https://privo.fyi/cloud/auth/atproto/callback"
   ],
-  "scope": "atproto include:cc.coffeencode.authPrivo",
+  "scope": "atproto",
   "grant_types": [
     "authorization_code",
     "refresh_token"

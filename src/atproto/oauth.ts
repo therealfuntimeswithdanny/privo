@@ -14,9 +14,8 @@ import { dpopProof, generateDpopKey, type DpopKeyPair } from "./dpop";
 // non-browser fetch — different zone, no bot rules. The doc must live at
 // exactly this URL and its client_id must match.
 export const ATCLIENT_ID = "https://privo.coffeencode.cc/oauth-client-metadata.json";
-// Sign-in only: the base atproto scope plus the Coffee & Code grant that the
-// account-creation flow needs. No repo/profile write permissions.
-export const ATPROTO_SCOPE = "atproto include:cc.coffeencode.authPrivo";
+// Sign-in only: the base atproto scope, no additional permissions.
+export const ATPROTO_SCOPE = "atproto";
 export const ATPROTO_REDIRECT = "https://privo.fyi/cloud/auth/atproto/callback";
 
 export interface OAuthStart {

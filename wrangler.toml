@@ -7,7 +7,11 @@ workers_dev = false
 # domains point at (Cloudflare for SaaS custom hostnames).
 routes = [
   { pattern = "privo.fyi/*", zone_name = "privo.fyi" },
-  { pattern = "dns.privo.fyi/*", zone_name = "privo.fyi" }
+  { pattern = "dns.privo.fyi/*", zone_name = "privo.fyi" },
+  # Custom hostnames enter this zone under their own Host header. Without this
+  # wildcard they match no Worker route and fall through to the originless
+  # fallback, which Cloudflare reports as a 522.
+  { pattern = "*/*", zone_name = "privo.fyi" }
 ]
 
 # Cloudflare Email Sending — abuse report notifications.

@@ -1,0 +1,13 @@
+{
+  "$type": "com.atproto.lexicon.schema",
+  "defs": {
+    "main": {
+      "detail": "Confirms which account is yours so Privo can sign you in. Privo can't post, follow, read your data, or do anything else on your behalf.",
+      "permissions": [],
+      "title": "Sign in to Privo",
+      "type": "permission-set"
+    }
+  },
+  "id": "cc.coffeencode.authPrivo",
+  "lexicon": 1
+}
