@@ -302,6 +302,85 @@
 
   </section>
 
+  <!-- Feature highlights carousel -->
+  <section class="carousel" id="highlights" aria-label="Why Privo" aria-roledescription="carousel">
+
+    <div class="carousel-track">
+
+      <div class="highlight" data-slide role="group" aria-roledescription="slide" aria-label="1 of 3: Fast and easy">
+        <div class="highlight-body">
+          <span class="highlight-eyebrow"><i class="fa-solid fa-bolt" aria-hidden="true"></i> Fast and easy</span>
+          <h2>Shorten a link in seconds — no account needed</h2>
+          <p>
+            Paste a URL, press enter, share. That’s the whole job. Every link gets
+            a safety check and a friendly interstitial automatically, no setup,
+            no sign-in, no friction.
+          </p>
+          <ul>
+            <li>Instant short links, straight from the homepage</li>
+            <li>Optional custom shortcodes when you want a memorable one</li>
+            <li>Copy with one click, share anywhere</li>
+          </ul>
+        </div>
+        <div class="highlight-media">
+          <video src="/p/media/fast.mp4" muted loop playsinline preload="metadata" aria-label="Demo: shortening a link"></video>
+        </div>
+      </div>
+
+      <div class="highlight" data-slide role="group" aria-roledescription="slide" aria-label="2 of 3: Enterprise grade features" hidden>
+        <div class="highlight-body">
+          <span class="highlight-eyebrow"><i class="fa-solid fa-building" aria-hidden="true"></i> Enterprise grade features</span>
+          <h2>Everything the big shorteners charge for — free</h2>
+          <p>
+            <a href="/cloud">Privo Cloud</a> turns links into infrastructure:
+            branded domains, team workflows, and a full API, with the same
+            zero-tracking promise.
+          </p>
+          <ul>
+            <li>Unlimited custom domains for branded links</li>
+            <li>Teams, bulk CSV tools, and audit logs built in</li>
+            <li>Simple API keys and custom SEO/OG tags on every link</li>
+          </ul>
+        </div>
+        <div class="highlight-media">
+          <video src="/p/media/enterprise.mp4" muted loop playsinline preload="metadata" aria-label="Demo: Privo Cloud features"></video>
+        </div>
+      </div>
+
+      <div class="highlight" data-slide role="group" aria-roledescription="slide" aria-label="3 of 3: Simple and easy reporting" hidden>
+        <div class="highlight-body">
+          <span class="highlight-eyebrow"><i class="fa-solid fa-flag" aria-hidden="true"></i> Simple and easy reporting</span>
+          <h2>See something malicious? Report it in one click</h2>
+          <p>
+            Every interstitial and every page links straight to the
+            <a href="/report">report form</a>. No accounts, no tickets — just
+            paste the link, say what’s wrong, and it lands in front of a human.
+          </p>
+          <ul>
+            <li>One short form — takes under a minute</li>
+            <li>Every report is reviewed by a person</li>
+            <li>Confirmed abuse is blocklisted, killing the link everywhere instantly</li>
+          </ul>
+        </div>
+        <div class="highlight-media">
+          <video src="/p/media/reporting.mp4" muted loop playsinline preload="metadata" aria-label="Demo: reporting a link"></video>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="carousel-nav">
+      <button type="button" class="carousel-arrow" data-prev aria-label="Previous slide"><i class="fa-solid fa-chevron-left" aria-hidden="true"></i></button>
+      <div class="carousel-dots" role="tablist" aria-label="Choose slide">
+        <button type="button" data-dot aria-label="Fast and easy" aria-pressed="true"></button>
+        <button type="button" data-dot aria-label="Enterprise grade features" aria-pressed="false"></button>
+        <button type="button" data-dot aria-label="Simple and easy reporting" aria-pressed="false"></button>
+      </div>
+      <button type="button" class="carousel-arrow" data-next aria-label="Next slide"><i class="fa-solid fa-chevron-right" aria-hidden="true"></i></button>
+    </div>
+
+  </section>
+
 </main>
 
 <!-- Footer -->
@@ -635,6 +714,60 @@
       nav.addEventListener("click", (e) => {
         if (e.target.closest("a")) setOpen(false);
       });
+    })();
+  </script>
+
+  <script>
+    /* Feature highlights carousel: autoplay with arrows/dots. */
+    (() => {
+      const carousel = document.getElementById("highlights");
+      if (!carousel) return;
+
+      const slides = [...carousel.querySelectorAll("[data-slide]")];
+      const dots = [...carousel.querySelectorAll("[data-dot]")];
+      const prev = carousel.querySelector("[data-prev]");
+      const next = carousel.querySelector("[data-next]");
+      const INTERVAL_MS = 6500;
+      const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+      let index = 0;
+      let timer = 0;
+      let hovering = false;
+
+      // Videos that can't load (file not added yet) collapse their tile.
+      for (const video of carousel.querySelectorAll("video")) {
+        video.addEventListener("error", () => { video.hidden = true; }, true);
+      }
+
+      function show(i) {
+        index = (i + slides.length) % slides.length;
+        slides.forEach((slide, s) => {
+          slide.hidden = s !== index;
+          const video = slide.querySelector("video");
+          if (video && !video.hidden) {
+            if (s === index) video.play().catch(() => {});
+            else video.pause();
+          }
+        });
+        dots.forEach((dot, d) => dot.setAttribute("aria-pressed", String(d === index)));
+        restart();
+      }
+
+      function restart() {
+        clearInterval(timer);
+        if (reducedMotion || hovering || document.hidden) return;
+        timer = setInterval(() => show(index + 1), INTERVAL_MS);
+      }
+
+      prev.addEventListener("click", () => show(index - 1));
+      next.addEventListener("click", () => show(index + 1));
+      dots.forEach((dot, d) => dot.addEventListener("click", () => show(d)));
+
+      carousel.addEventListener("pointerenter", () => { hovering = true; restart(); });
+      carousel.addEventListener("pointerleave", () => { hovering = false; restart(); });
+      document.addEventListener("visibilitychange", restart);
+
+      show(0);
     })();
   </script>
 

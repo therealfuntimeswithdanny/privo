@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="This domain is used for branded short links powered by Privo.fyi.">
+  <meta name="robots" content="noindex, follow">
+  <meta name="theme-color" content="#1c1310">
+  <meta name="color-scheme" content="dark">
+  <title>Powered by Privo.fyi</title>
+  <link rel="icon" type="image/x-icon" href="/p/media/privo.svg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    html { background: #1c1310; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      padding: 24px;
+      box-sizing: border-box;
+      background: #1c1310;
+      color: #f0e6dc;
+      font: 16px/1.6 "Inter", system-ui, sans-serif;
+    }
+    main {
+      max-width: 480px;
+      width: 100%;
+      text-align: center;
+    }
+    .mark {
+      width: 56px;
+      height: 56px;
+      margin: 0 auto 20px;
+    }
+    h1 {
+      margin: 0 0 12px;
+      font-family: "Space Grotesk", system-ui, sans-serif;
+      font-size: 28px;
+      font-weight: 500;
+      color: #f0e6dc;
+    }
+    h1 strong { color: #e8c28a; }
+    p {
+      margin: 0 0 16px;
+      color: #c9b8a8;
+    }
+    .domain {
+      display: inline-block;
+      margin: 0 0 20px;
+      padding: 8px 16px;
+      border: 1px solid #3a2b20;
+      border-radius: 10px;
+      background: #241812;
+      color: #e8c28a;
+      font: 500 15px ui-monospace, SFMono-Regular, Menlo, monospace;
+    }
+    .actions {
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .actions a {
+      padding: 10px 18px;
+      border-radius: 10px;
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 14px;
+    }
+    .primary {
+      background: #d4975c;
+      color: #1c1310;
+    }
+    .ghost {
+      border: 1px solid #3a2b20;
+      color: #e8c28a;
+    }
+    .small {
+      margin-top: 24px;
+      font-size: 13px;
+      color: #8f7d6d;
+    }
+    .small a { color: #c9b8a8; }
+  </style>
+</head>
+<body>
+  <main>
+    <img class="mark" src="/p/media/privo.svg" alt="" width="56" height="56">
+    <h1>This domain is powered by <strong>privo.fyi</strong></h1>
+    <div class="domain" id="domain">—</div>
+    <p id="explainer">
+      This domain is used for branded short links created with
+      <strong>privo.fyi</strong> — a privacy-first link shortener. Links on this
+      domain are checked against Google Web Risk before redirecting, so you can
+      follow them with confidence.
+    </p>
+    <div class="actions">
+      <a class="primary" href="https://privo.fyi">Shorten your own links</a>
+      <a class="ghost" href="https://privo.fyi/about">About Privo</a>
+    </div>
+    <p class="small">
+      Think a link on this domain is malicious?
+      <a href="https://privo.fyi/report" id="report">Report it</a>.
+    </p>
+  </main>
+  <script>
+    // ?domain=example.com — shown verbatim but length/charset checked, since
+    // it's our own redirect that puts it there.
+    const domain = new URLSearchParams(location.search).get("domain") || "";
+    if (/^[a-z0-9][a-z0-9.-]{1,252}\.[a-z]{2,}$/i.test(domain)) {
+      document.getElementById("domain").textContent = domain;
+      document.title = domain + " is powered by Privo.fyi";
+    } else {
+      document.getElementById("domain").hidden = true;
+    }
+  </script>
+</body>
+</html>

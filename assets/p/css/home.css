@@ -732,6 +732,202 @@
     }
 
     /* --------------------------------
+       Feature highlights carousel
+    -------------------------------- */
+
+    .carousel {
+      margin: 0 12px;
+      padding: 0 0 88px;
+    }
+
+    .carousel-track {
+      position: relative;
+    }
+
+    .highlight {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 28px;
+      align-items: center;
+
+      padding: 32px;
+
+      border: 1px solid var(--border);
+      border-radius: var(--radius-card);
+
+      background: rgb(23 16 9 / 65%);
+
+      transition: opacity .4s ease;
+    }
+
+    /* Inactive slides sit on top of each other without taking layout space. */
+    .highlight[hidden] {
+      display: none;
+    }
+
+    .highlight-media video {
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      object-fit: cover;
+      display: block;
+
+      border: 1px solid var(--border);
+      border-radius: 14px;
+
+      background: #140d08;
+    }
+
+    /* If the demo file isn't there yet, the video box stays a clean empty tile. */
+    .highlight-media video:not([src]), .highlight-media video[src=""] {
+      display: none;
+    }
+
+    .carousel-nav {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 18px;
+
+      margin-top: 16px;
+    }
+
+    .carousel-arrow {
+      display: grid;
+      place-items: center;
+
+      width: 34px;
+      height: 34px;
+
+      border: 1px solid var(--border);
+      border-radius: 50%;
+
+      background: transparent;
+      color: var(--muted);
+
+      font-size: 12px;
+      cursor: pointer;
+
+      transition: color .15s, border-color .15s;
+    }
+
+    .carousel-arrow:hover {
+      border-color: var(--peach);
+      color: var(--peach);
+    }
+
+    .carousel-dots {
+      display: flex;
+      gap: 8px;
+    }
+
+    .carousel-dots button {
+      width: 8px;
+      height: 8px;
+      padding: 0;
+
+      border: 0;
+      border-radius: 50%;
+
+      background: var(--border);
+      cursor: pointer;
+
+      transition: background .2s, transform .2s;
+    }
+
+    .carousel-dots button[aria-pressed="true"] {
+      background: var(--peach);
+      transform: scale(1.35);
+    }
+
+    .highlight-eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+
+      margin-bottom: 8px;
+
+      color: var(--peach);
+
+      font: 600 12px/1 "Inter", system-ui, sans-serif;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+
+    .highlight h2 {
+      margin: 0 0 10px;
+
+      color: var(--text);
+
+      font-family: "Space Grotesk", system-ui, sans-serif;
+      font-size: 24px;
+      font-weight: 500;
+      letter-spacing: -.01em;
+    }
+
+    .highlight p {
+      margin: 0 0 14px;
+      max-width: 640px;
+
+      color: var(--muted);
+      font: 400 14px/1.65 "Inter", system-ui, sans-serif;
+    }
+
+    .highlight p a {
+      color: var(--peach);
+      text-decoration: none;
+    }
+
+    .highlight p a:hover {
+      color: var(--peach-hi);
+      text-decoration: underline;
+      text-underline-offset: 3px;
+    }
+
+    .highlight ul {
+      display: grid;
+      gap: 6px;
+
+      margin: 0;
+      padding: 0;
+
+      list-style: none;
+
+      color: var(--muted);
+      font: 400 13px/1.5 "Inter", system-ui, sans-serif;
+    }
+
+    .highlight li {
+      display: flex;
+      align-items: baseline;
+      gap: 9px;
+    }
+
+    .highlight li::before {
+      content: "";
+
+      width: 5px;
+      height: 5px;
+      flex: none;
+
+      border-radius: 50%;
+      background: var(--peach);
+
+      transform: translateY(-2px);
+    }
+
+    @media (max-width: 640px) {
+      .highlight {
+        grid-template-columns: 1fr;
+        gap: 16px;
+        padding: 22px;
+      }
+
+      .highlight h2 {
+        font-size: 21px;
+      }
+    }
+
+    /* --------------------------------
        Footer
     -------------------------------- */
 
